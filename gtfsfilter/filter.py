@@ -26,7 +26,7 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     # filter stops.txt -
     stop_ids = gpd_data["stop_id"].values
     mask = df_dict["stops"]["stop_id"].isin(stop_ids)
-    df_dict["stops"][mask].to_csv(output_dir / "stops.txt", single_file=True)
+    df_dict["stops"][mask].to_csv(output_dir / "stops.txt", single_file=True, index=False)
 
     # filter transfers.txt
     if transfers and "transfers" in df_dict:
@@ -34,7 +34,7 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
             "transfers"
         ]["to_stop_id"].isin(stop_ids)
         df_dict["transfers"] = df_dict["transfers"][mask]
-        df_dict["transfers"].to_csv(output_dir / "transfers.txt", single_file=True)
+        df_dict["transfers"].to_csv(output_dir / "transfers.txt", single_file=True, index=False)
 
     if shapes and "shapes" in df_dict:
         raise NotImplementedError()
@@ -44,12 +44,12 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     unique_trip_ids = df_dict["stop_times"][mask]["trip_id"].unique()
     trip_ids = unique_trip_ids.values.compute()
     mask = df_dict["stop_times"]["trip_id"].isin(trip_ids)
-    df_dict["stop_times"][mask].to_csv(output_dir / "stop_times.txt", single_file=True)
+    df_dict["stop_times"][mask].to_csv(output_dir / "stop_times.txt", single_file=True, index=False)
 
     # filter trips.txt -
     mask = df_dict["trips"]["trip_id"].isin(trip_ids)
     df_dict["trips"] = df_dict["trips"][mask]
-    df_dict["trips"].to_csv(output_dir / "trips.txt", single_file=True)
+    df_dict["trips"].to_csv(output_dir / "trips.txt", single_file=True, index=False)
     del trip_ids
 
     if 'calendar' in df_dict or 'calendar_dates' in df_dict:
@@ -59,13 +59,13 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
         if 'calendar' in df_dict:
             mask = df_dict["calendar"]['service_id'].isin(service_ids)
             df_dict['calendar'] = df_dict['calendar'][mask]
-            df_dict["calendar"].to_csv(output_dir / "calendar.txt", single_file=True)
+            df_dict["calendar"].to_csv(output_dir / "calendar.txt", single_file=True, index=False)
 
         # filter calendar dates
         if 'calendar_dates' in df_dict:
             mask = df_dict["calendar_dates"]['service_id'].isin(service_ids)
             df_dict['calendar_dates'] = df_dict['calendar_dates'][mask]
-            df_dict["calendar_dates"].to_csv(output_dir / "calendar_dates.txt", single_file=True)
+            df_dict["calendar_dates"].to_csv(output_dir / "calendar_dates.txt", single_file=True, index=False)
 
     del service_ids
 
@@ -73,10 +73,10 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     route_ids = df_dict["trips"]["route_id"].values
     mask = df_dict["routes"]["route_id"].isin(route_ids.compute())
     df_dict["routes"] = df_dict["routes"][mask]
-    df_dict["routes"].to_csv(output_dir / "routes.txt", single_file=True)
+    df_dict["routes"].to_csv(output_dir / "routes.txt", single_file=True, index=False)
 
     # Filter agency.txt
     agency_ids = df_dict["routes"]["agency_id"].values
     mask = df_dict["agency"]["agency_id"].isin(agency_ids.compute())
     df_dict["agency"] = df_dict["agency"][mask]
-    df_dict["agency"].to_csv(output_dir / "agency.txt", single_file=True)
+    df_dict["agency"].to_csv(output_dir / "agency.txt", single_file=True, index=False)
