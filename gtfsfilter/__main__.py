@@ -7,18 +7,11 @@ from .filter import filter_gtfs
 
 
 def main():
-    parser = argparse.ArgumentParser(description="GTFS Utilities")
+    parser = argparse.ArgumentParser(description="GTFS Filter")
     parser.add_argument(action="store", dest="src", help="Input filepath")
     parser.add_argument(action="store", dest="dst", help="Output filepath")
     parser.add_argument(
         "--bounds", action="store", dest="bounds", help="Filter boundary"
-    )
-    parser.add_argument(
-        "-o",
-        "--operation",
-        action="store",
-        dest="operation",
-        help="Filter operation (within, intersects)",
     )
     parser.add_argument(
         "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
