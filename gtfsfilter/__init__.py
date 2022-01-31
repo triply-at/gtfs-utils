@@ -9,6 +9,7 @@ REQUIRED_GTFS_FILES = [
     "routes",
     "trips",
     "calendar",
+    "calendar_dates",
     "stop_times",
     # 'shapes',
     # 'frequencies',
