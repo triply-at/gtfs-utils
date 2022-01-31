@@ -2,38 +2,55 @@ import json
 import time
 import logging
 import argparse
-from . import load_gtfs, save_gtfs
+from . import load_gtfs
 from .filter import filter_gtfs
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="GTFS Utilities")
-    parser.add_argument(action='store',
-        dest='src', help="Input filepath")
-    parser.add_argument(action='store',
-        dest='dst', help="Output filepath")
-    parser.add_argument("--bounds", action='store',
-        dest='bounds', help="Filter boundary")
-    parser.add_argument("-o", "--operation", action='store',
-        dest='operation', help="Filter operation (within, intersects)")
-    parser.add_argument("--overwrite", action='store_true',
-        dest='overwrite', help="Overwrite if exists")
-    parser.add_argument('-v', '--verbose', action='store_true',
-        dest='verbose', default=False,
-        help="Verbose output")
-    parser.add_argument('-s', '--shapes', action='store_true',
-        dest='shapes', default=False,
-        help="Include shapes.txt")
-    parser.add_argument('-t', '--transfers', action='store_true',
-        dest='transfers', default=False,
-        help="Include transfers.txt")
+    parser = argparse.ArgumentParser(description="GTFS Utilities")
+    parser.add_argument(action="store", dest="src", help="Input filepath")
+    parser.add_argument(action="store", dest="dst", help="Output filepath")
+    parser.add_argument(
+        "--bounds", action="store", dest="bounds", help="Filter boundary"
+    )
+    parser.add_argument(
+        "-o",
+        "--operation",
+        action="store",
+        dest="operation",
+        help="Filter operation (within, intersects)",
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        dest="verbose",
+        default=False,
+        help="Verbose output",
+    )
+    parser.add_argument(
+        "-s",
+        "--shapes",
+        action="store_true",
+        dest="shapes",
+        default=False,
+        help="Include shapes.txt",
+    )
+    parser.add_argument(
+        "-t",
+        "--transfers",
+        action="store_true",
+        dest="transfers",
+        default=False,
+        help="Include transfers.txt",
+    )
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(
-        format='%(asctime)s-%(levelname)s-%(message)s',
-        level=log_level)
+    logging.basicConfig(format="%(asctime)s-%(levelname)s-%(message)s", level=log_level)
 
     bounds = json.loads(args.bounds)
     src_filepath = args.src
@@ -52,5 +69,5 @@ def main():
     logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
