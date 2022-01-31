@@ -51,7 +51,12 @@ def main():
 
     # Load GTFS
     t = time.time()
-    df_dict = load_gtfs(src_filepath, subset=[args.shapes, args.transfers])
+    subset = []
+    if args.transfers:
+        subset.append('transfers')
+    if args.shapes:
+        subset.append('shapes')
+    df_dict = load_gtfs(src_filepath, subset=subset)
     duration = time.time() - t
     logging.debug(f"Loaded {src_filepath} for {duration:.2f}s")
 
