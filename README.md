@@ -1,6 +1,6 @@
 # gtfsutils
 
-GTFS command-line tool and Python GTFS utility library
+GTFS command-line filtering tool
 
 ## Installation
 
@@ -17,7 +17,7 @@ gtfsfilter -h
 ```
 
 ```
-usage: gtfsfilter [-h] [--bounds BOUNDS] [-v] src dst
+usage: gtfsfilter [-h] [--bounds BOUNDS] [--overwrite] [-v] [-s] [-t] src dst
 
 GTFS Filter
 
@@ -29,4 +29,6 @@ optional arguments:
   -h, --help       show this help message and exit
   --bounds BOUNDS  Filter boundary
   -v, --verbose    Verbose output
+  -s, --shapes     Include shapes.txt
+  -t, --transfers  Include transfers.txt
 ```
