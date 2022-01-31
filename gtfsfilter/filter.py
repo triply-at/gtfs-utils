@@ -55,17 +55,17 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     if 'calendar' in df_dict or 'calendar_dates' in df_dict:
         service_ids = df_dict["trips"]["service_id"].unique().values.compute()
 
-    # filter calendar
-    if 'calendar' in df_dict:
-        mask = df_dict["calendar"]['service_id'].isin(service_ids)
-        df_dict['calendar'] = df_dict['calendar'][mask]
-        df_dict["calendar"].to_csv(output_dir / "calendar.txt", single_file=True)
+        # filter calendar
+        if 'calendar' in df_dict:
+            mask = df_dict["calendar"]['service_id'].isin(service_ids)
+            df_dict['calendar'] = df_dict['calendar'][mask]
+            df_dict["calendar"].to_csv(output_dir / "calendar.txt", single_file=True)
 
-    # filter calendar dates
-    if 'calendar_dates' in df_dict:
-        mask = df_dict["calendar_dates"]['service_id'].isin(service_ids)
-        df_dict['calendar_dates'] = df_dict['calendar_dates'][mask]
-        df_dict["calendar_dates"].to_csv(output_dir / "calendar_dates.txt", single_file=True)
+        # filter calendar dates
+        if 'calendar_dates' in df_dict:
+            mask = df_dict["calendar_dates"]['service_id'].isin(service_ids)
+            df_dict['calendar_dates'] = df_dict['calendar_dates'][mask]
+            df_dict["calendar_dates"].to_csv(output_dir / "calendar_dates.txt", single_file=True)
 
     del service_ids
 
