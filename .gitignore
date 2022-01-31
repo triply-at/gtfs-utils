@@ -4,6 +4,9 @@ data/
 # Mac OS
 .DS_Store
 
+# Jetbrains
+.idea
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
