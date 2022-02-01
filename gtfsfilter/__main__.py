@@ -62,7 +62,7 @@ def main():
 
     # Filter GTFS
     t = time.time()
-    filter_gtfs(df_dict, bounds, dst_filepath)
+    filter_gtfs(df_dict, bounds, dst_filepath, transfers=args.transfers, shapes=args.shapes)
     duration = time.time() - t
     logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
 

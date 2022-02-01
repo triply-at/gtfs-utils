@@ -1,3 +1,5 @@
+import logging
+import time
 from pathlib import Path
 
 import shapely
@@ -19,64 +21,98 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
         dic["stop_id"], geometry=gpd.points_from_xy(dic.stop_lon, dic.stop_lat)
     )
     del dic
-
     mask = gpd_data.within(geom)
     gpd_data = gpd_data[mask]
 
     # filter stops.txt -
+    t = time.time()
     stop_ids = gpd_data["stop_id"].values
     mask = df_dict["stops"]["stop_id"].isin(stop_ids)
-    df_dict["stops"][mask].to_csv(output_dir / "stops.txt", single_file=True, index=False)
+    df_dict["stops"][mask].to_csv(
+        output_dir / "stops.txt", single_file=True, index=False
+    )
+    duration = time.time() - t
+    logging.debug(f"Filtered stops.txt for {duration:.2f}s")
+
 
     # filter transfers.txt
     if transfers and "transfers" in df_dict:
+        t = time.time()
         mask = df_dict["transfers"]["from_stop_id"].isin(stop_ids) & df_dict[
             "transfers"
         ]["to_stop_id"].isin(stop_ids)
         df_dict["transfers"] = df_dict["transfers"][mask]
-        df_dict["transfers"].to_csv(output_dir / "transfers.txt", single_file=True, index=False)
+        df_dict["transfers"].to_csv(
+            output_dir / "transfers.txt", single_file=True, index=False
+        )
+        duration = time.time() - t
+        logging.debug(f"Filtered transfers.txt for {duration:.2f}s")
 
     if shapes and "shapes" in df_dict:
         raise NotImplementedError()
 
     # filter stop_times.txt -
+    t = time.time()
     mask = df_dict["stop_times"]["stop_id"].isin(stop_ids)
     unique_trip_ids = df_dict["stop_times"][mask]["trip_id"].unique()
     trip_ids = unique_trip_ids.values.compute()
     mask = df_dict["stop_times"]["trip_id"].isin(trip_ids)
-    df_dict["stop_times"][mask].to_csv(output_dir / "stop_times.txt", single_file=True, index=False)
+    df_dict["stop_times"][mask].to_csv(
+        output_dir / "stop_times.txt", single_file=True, index=False
+    )
+    duration = time.time() - t
+    logging.debug(f"Filtered stop_times.txt for {duration:.2f}s")
 
     # filter trips.txt -
+    t = time.time()
     mask = df_dict["trips"]["trip_id"].isin(trip_ids)
     df_dict["trips"] = df_dict["trips"][mask]
     df_dict["trips"].to_csv(output_dir / "trips.txt", single_file=True, index=False)
     del trip_ids
+    duration = time.time() - t
+    logging.debug(f"Filtered trips.txt for {duration:.2f}s")
 
-    if 'calendar' in df_dict or 'calendar_dates' in df_dict:
+    if "calendar" in df_dict or "calendar_dates" in df_dict:
         service_ids = df_dict["trips"]["service_id"].unique().values.compute()
 
         # filter calendar
-        if 'calendar' in df_dict:
-            mask = df_dict["calendar"]['service_id'].isin(service_ids)
-            df_dict['calendar'] = df_dict['calendar'][mask]
-            df_dict["calendar"].to_csv(output_dir / "calendar.txt", single_file=True, index=False)
+        if "calendar" in df_dict:
+            t = time.time()
+            mask = df_dict["calendar"]["service_id"].isin(service_ids)
+            df_dict["calendar"] = df_dict["calendar"][mask]
+            df_dict["calendar"].to_csv(
+                output_dir / "calendar.txt", single_file=True, index=False
+            )
+            duration = time.time() - t
+            logging.debug(f"Filtered calendar.txt for {duration:.2f}s")
 
         # filter calendar dates
-        if 'calendar_dates' in df_dict:
-            mask = df_dict["calendar_dates"]['service_id'].isin(service_ids)
-            df_dict['calendar_dates'] = df_dict['calendar_dates'][mask]
-            df_dict["calendar_dates"].to_csv(output_dir / "calendar_dates.txt", single_file=True, index=False)
+        if "calendar_dates" in df_dict:
+            t = time.time()
+            mask = df_dict["calendar_dates"]["service_id"].isin(service_ids)
+            df_dict["calendar_dates"] = df_dict["calendar_dates"][mask]
+            df_dict["calendar_dates"].to_csv(
+                output_dir / "calendar_dates.txt", single_file=True, index=False
+            )
+            duration = time.time() - t
+            logging.debug(f"Filtered calendar_dates.txt for {duration:.2f}s")
 
     del service_ids
 
     # Filter route.txt
+    t = time.time()
     route_ids = df_dict["trips"]["route_id"].values
     mask = df_dict["routes"]["route_id"].isin(route_ids.compute())
     df_dict["routes"] = df_dict["routes"][mask]
     df_dict["routes"].to_csv(output_dir / "routes.txt", single_file=True, index=False)
+    duration = time.time() - t
+    logging.debug(f"Filtered routes.txt for {duration:.2f}s")
 
     # Filter agency.txt
+    t = time.time()
     agency_ids = df_dict["routes"]["agency_id"].values
     mask = df_dict["agency"]["agency_id"].isin(agency_ids.compute())
     df_dict["agency"] = df_dict["agency"][mask]
     df_dict["agency"].to_csv(output_dir / "agency.txt", single_file=True, index=False)
+    duration = time.time() - t
+    logging.debug(f"Filtered agency.txt for {duration:.2f}s")
