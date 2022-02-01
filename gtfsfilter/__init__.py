@@ -75,6 +75,8 @@ def load_gtfs(filepath, subset=[]):
                             "stop_id": "string",
                             "from_stop_id": "string",
                             "to_stop_id": "string",
+                            "zone_id": "string",
+                            "block_id": "string",
                             "wheelchair_accessible": "UInt8",
                             "bikes_allowed": "UInt8",
                             "stop_code": "string",
