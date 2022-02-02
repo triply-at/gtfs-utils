@@ -1,5 +1,7 @@
 numpy
 pandas
+numexpr
+bottleneck
 shapely
 geopandas
 dask[complete]
