@@ -2,6 +2,7 @@ import logging
 import time
 from pathlib import Path
 
+import numpy as np
 import shapely
 import geopandas as gpd
 
@@ -21,42 +22,22 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
         dic["stop_id"], geometry=gpd.points_from_xy(dic.stop_lon, dic.stop_lat)
     )
     del dic
+
+    t = time.time()
     mask = gpd_data.within(geom)
     gpd_data = gpd_data[mask]
-
-    # filter stops.txt -
-    t = time.time()
     stop_ids = gpd_data["stop_id"].values
-    mask = df_dict["stops"]["stop_id"].isin(stop_ids)
-    df_dict["stops"][mask].to_csv(
-        output_dir / "stops.txt", single_file=True, index=False
-    )
     duration = time.time() - t
-    logging.debug(f"Filtered stops.txt for {duration:.2f}s")
-
-
-    # filter transfers.txt
-    if transfers and "transfers" in df_dict:
-        t = time.time()
-        mask = df_dict["transfers"]["from_stop_id"].isin(stop_ids) & df_dict[
-            "transfers"
-        ]["to_stop_id"].isin(stop_ids)
-        df_dict["transfers"] = df_dict["transfers"][mask]
-        df_dict["transfers"].to_csv(
-            output_dir / "transfers.txt", single_file=True, index=False
-        )
-        duration = time.time() - t
-        logging.debug(f"Filtered transfers.txt for {duration:.2f}s")
-
-    if shapes and "shapes" in df_dict:
-        raise NotImplementedError()
+    logging.debug(f"Filtered stops in bounds for {duration:.2f}s")
 
     # filter stop_times.txt -
     t = time.time()
     mask = df_dict["stop_times"]["stop_id"].isin(stop_ids)
+    del stop_ids
     unique_trip_ids = df_dict["stop_times"][mask]["trip_id"].unique()
     trip_ids = unique_trip_ids.compute()
     mask = df_dict["stop_times"]["trip_id"].isin(trip_ids)
+    all_stop_ids = df_dict["stop_times"][mask]["stop_id"].unique().compute()
     df_dict["stop_times"][mask].to_csv(
         output_dir / "stop_times.txt", single_file=True, index=False
     )
@@ -67,10 +48,39 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     t = time.time()
     mask = df_dict["trips"]["trip_id"].isin(trip_ids)
     df_dict["trips"] = df_dict["trips"][mask]
+    if not shapes:
+        df_dict["trips"] = df_dict["trips"].assign(shape_id=np.nan)
     df_dict["trips"].to_csv(output_dir / "trips.txt", single_file=True, index=False)
     del trip_ids
     duration = time.time() - t
     logging.debug(f"Filtered trips.txt for {duration:.2f}s")
+
+    # filter stops.txt -
+    t = time.time()
+    mask = df_dict["stops"]["stop_id"].isin(all_stop_ids)
+    df_dict["stops"][mask].to_csv(
+        output_dir / "stops.txt", single_file=True, index=False
+    )
+    duration = time.time() - t
+    logging.debug(f"Filtered stops.txt for {duration:.2f}s")
+
+    # filter transfers.txt
+    if transfers and "transfers" in df_dict:
+        t = time.time()
+        mask = df_dict["transfers"]["from_stop_id"].isin(all_stop_ids) & df_dict[
+            "transfers"
+        ]["to_stop_id"].isin(all_stop_ids)
+        df_dict["transfers"] = df_dict["transfers"][mask]
+        df_dict["transfers"].to_csv(
+            output_dir / "transfers.txt", single_file=True, index=False
+        )
+        duration = time.time() - t
+        logging.debug(f"Filtered transfers.txt for {duration:.2f}s")
+
+    if shapes and "shapes" in df_dict:
+        raise NotImplementedError()
+
+    del all_stop_ids
 
     if "calendar" in df_dict or "calendar_dates" in df_dict:
         service_ids = df_dict["trips"]["service_id"].unique().compute()
