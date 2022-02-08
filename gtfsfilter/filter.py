@@ -18,6 +18,7 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
         raise ValueError(f"filter_geometry type {type(filter_geometry)} not supported!")
 
     dic = df_dict["stops"][["stop_lon", "stop_lat", "stop_id"]].compute()
+
     gpd_data = gpd.GeoDataFrame(
         dic["stop_id"], geometry=gpd.points_from_xy(dic.stop_lon, dic.stop_lat)
     )
@@ -37,8 +38,10 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     unique_trip_ids = df_dict["stop_times"][mask]["trip_id"].unique()
     trip_ids = unique_trip_ids.compute()
     mask = df_dict["stop_times"]["trip_id"].isin(trip_ids)
+    # Get all stop ids which are in the trips (some are outside off the bounds)
     all_stop_ids = df_dict["stop_times"][mask]["stop_id"].unique().compute()
-    df_dict["stop_times"][mask].to_csv(
+    df_dict["stop_times"] = df_dict["stop_times"][mask]
+    df_dict["stop_times"].to_csv(
         output_dir / "stop_times.txt", single_file=True, index=False
     )
     duration = time.time() - t
@@ -58,7 +61,8 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     # filter stops.txt -
     t = time.time()
     mask = df_dict["stops"]["stop_id"].isin(all_stop_ids)
-    df_dict["stops"][mask].to_csv(
+    df_dict["stops"] = df_dict["stops"][mask]
+    df_dict["stops"].to_csv(
         output_dir / "stops.txt", single_file=True, index=False
     )
     duration = time.time() - t
