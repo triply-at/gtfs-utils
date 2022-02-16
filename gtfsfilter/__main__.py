@@ -33,6 +33,13 @@ def main():
         help="Include shapes.txt",
     )
     parser.add_argument(
+        "--complete-trips",
+        action="store_true",
+        dest="complete_trips",
+        default=False,
+        help="Include outgoing trips",
+    )
+    parser.add_argument(
         "-t",
         "--transfers",
         action="store_true",
@@ -62,7 +69,7 @@ def main():
 
     # Filter GTFS
     t = time.time()
-    filter_gtfs(df_dict, bounds, dst_filepath, transfers=args.transfers, shapes=args.shapes)
+    filter_gtfs(df_dict, bounds, dst_filepath, transfers=args.transfers, shapes=args.shapes, complete_trips=args.complete_trips)
     duration = time.time() - t
     logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
 

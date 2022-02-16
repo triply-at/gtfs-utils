@@ -7,7 +7,7 @@ import shapely
 import geopandas as gpd
 
 
-def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False):
+def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False, complete_trips=False):
     output_dir = Path(output)
 
     if isinstance(filter_geometry, list):
@@ -37,8 +37,10 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False)
     del stop_ids
     unique_trip_ids = df_dict["stop_times"][mask]["trip_id"].unique()
     trip_ids = unique_trip_ids.compute()
-    mask = df_dict["stop_times"]["trip_id"].isin(trip_ids)
-    # Get all stop ids which are in the trips (some are outside off the bounds)
+
+    if complete_trips:
+        mask = df_dict["stop_times"]["trip_id"].isin(trip_ids)
+
     all_stop_ids = df_dict["stop_times"][mask]["stop_id"].unique().compute()
     df_dict["stop_times"] = df_dict["stop_times"][mask]
     df_dict["stop_times"].to_csv(
