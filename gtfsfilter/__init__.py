@@ -19,7 +19,9 @@ REQUIRED_GTFS_FILES = [
 ]
 
 
-def load_gtfs(filepath, subset=[]):
+def load_gtfs(filepath, subset=None):
+    if subset is None:
+        subset = []
     df_dict = {}
     p = Path(filepath)
     if p.is_dir():
