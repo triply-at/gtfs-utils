@@ -7,7 +7,7 @@ from .filter import filter_gtfs
 
 
 def main():
-    parser = argparse.ArgumentParser(description="GTFS Filter")
+    parser = argparse.ArgumentParser(description="GTFS Filter", formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(action="store", dest="src", help="Input filepath")
     parser.add_argument(action="store", dest="dst", help="Output filepath")
     parser.add_argument(
@@ -37,8 +37,14 @@ def main():
         action="store_true",
         dest="complete_trips",
         default=False,
-        help="Include outgoing trips",
-    )
+        help="""If applying bounds to a gtfs file, all trips and objects
+outside the border are excluded; even then if they belong
+to a trip which is not entirely excluded because it has
+some stops inside the borders. The part of the trip inside
+the border will be available. 
+This option will ensure that every trip stays complete.
+That means there will be stops also outside of the bounds.
+This option results in slower processing.""",)
     parser.add_argument(
         "-t",
         "--transfers",
