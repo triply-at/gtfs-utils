@@ -62,7 +62,7 @@ def load_gtfs(filepath, subset=None):
                             "drop_off_type": "UInt8",
                             "min_transfer_time": "UInt64",
                             "exception_type": "uint8",
-                            "parent_station": "UInt64",
+                            "parent_station": "string",
                             "stop_sequence": "uint64",
                             "stop_lon": "float64",
                             "route_id": "string",
