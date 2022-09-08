@@ -56,7 +56,7 @@ def load_gtfs(filepath, subset=None):
                             "saturday": "uint8",
                             "sunday": "uint8",
                             "direction_id": "UInt8",
-                            "route_type": "uint8",
+                            "route_type": "uint16",
                             "transfer_type": "uint8",
                             "pickup_type": "UInt8",
                             "drop_off_type": "UInt8",
