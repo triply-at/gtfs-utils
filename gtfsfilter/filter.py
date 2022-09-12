@@ -7,6 +7,60 @@ import shapely
 import geopandas as gpd
 
 
+def cleanup_stops(df_dict, output_dir: Path):
+    pass
+
+def cleanup_calendar(df_dict, output_dir: Path):
+    if "calendar" in df_dict or "calendar_dates" in df_dict:
+        service_ids = df_dict["trips"]["service_id"].unique().compute()
+
+        # filter calendar
+        if "calendar" in df_dict:
+            t = time.time()
+            mask = df_dict["calendar"]["service_id"].isin(service_ids)
+            df_dict["calendar"] = df_dict["calendar"][mask]
+            df_dict["calendar"].to_csv(
+                output_dir / "calendar.txt", single_file=True, index=False
+            )
+            duration = time.time() - t
+            logging.debug(f"Filtered calendar.txt for {duration:.2f}s")
+
+        # filter calendar dates
+        if "calendar_dates" in df_dict:
+            t = time.time()
+            mask = df_dict["calendar_dates"]["service_id"].isin(service_ids)
+            df_dict["calendar_dates"] = df_dict["calendar_dates"][mask]
+            df_dict["calendar_dates"].to_csv(
+                output_dir / "calendar_dates.txt", single_file=True, index=False
+            )
+            duration = time.time() - t
+            logging.debug(f"Filtered calendar_dates.txt for {duration:.2f}s")
+
+    del service_ids
+
+
+def remove_route_with_type(df_dict, output, types):
+    output_dir = Path(output)
+
+    mask = df_dict['routes']['route_type'].isin(types)
+    unique_route_ids = df_dict['routes'][mask]['route_id'].unique().compute()
+    df_dict['routes'] = df_dict["routes"][~mask]
+    df_dict['routes'].to_csv(output_dir / "routes.txt", single_file=True, index=False)
+
+    mask = df_dict['trips']['route_id'].isin(unique_route_ids)
+    unique_trip_ids = df_dict['trips'][mask].compute()
+    df_dict['trips'] = df_dict['trips'][~mask]
+    df_dict['trips'].to_csv(output_dir / "trips.txt", single_file=True, index=False)
+
+    del unique_route_ids
+
+    mask = df_dict['stop_times']['trip_id'].isin(unique_trip_ids)
+    df_dict['stop_times'] = df_dict['stop_times'][~mask]
+    df_dict['stop_times'].to_csv(output_dir / "stop_times.txt", single_file=True, index=False)
+
+    cleanup_calendar(df_dict, output_dir)
+
+
 def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False, complete_trips=False):
     output_dir = Path(output)
 
@@ -88,32 +142,7 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False,
 
     del all_stop_ids
 
-    if "calendar" in df_dict or "calendar_dates" in df_dict:
-        service_ids = df_dict["trips"]["service_id"].unique().compute()
-
-        # filter calendar
-        if "calendar" in df_dict:
-            t = time.time()
-            mask = df_dict["calendar"]["service_id"].isin(service_ids)
-            df_dict["calendar"] = df_dict["calendar"][mask]
-            df_dict["calendar"].to_csv(
-                output_dir / "calendar.txt", single_file=True, index=False
-            )
-            duration = time.time() - t
-            logging.debug(f"Filtered calendar.txt for {duration:.2f}s")
-
-        # filter calendar dates
-        if "calendar_dates" in df_dict:
-            t = time.time()
-            mask = df_dict["calendar_dates"]["service_id"].isin(service_ids)
-            df_dict["calendar_dates"] = df_dict["calendar_dates"][mask]
-            df_dict["calendar_dates"].to_csv(
-                output_dir / "calendar_dates.txt", single_file=True, index=False
-            )
-            duration = time.time() - t
-            logging.debug(f"Filtered calendar_dates.txt for {duration:.2f}s")
-
-    del service_ids
+    cleanup_calendar(df_dict, output_dir)
 
     # Filter route.txt
     t = time.time()
