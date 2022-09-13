@@ -48,7 +48,7 @@ def remove_route_with_type(df_dict, output, types):
     df_dict['routes'].to_csv(output_dir / "routes.txt", single_file=True, index=False)
 
     mask = df_dict['trips']['route_id'].isin(unique_route_ids)
-    unique_trip_ids = df_dict['trips'][mask].compute()
+    unique_trip_ids = df_dict['trips'][mask]['trip_id'].unique().compute()
     df_dict['trips'] = df_dict['trips'][~mask]
     df_dict['trips'].to_csv(output_dir / "trips.txt", single_file=True, index=False)
 

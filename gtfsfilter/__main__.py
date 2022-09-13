@@ -3,6 +3,8 @@ import time
 import logging
 import argparse
 from pathlib import Path
+import tempfile
+import shutil
 
 from . import load_gtfs
 from .filter import filter_gtfs, remove_route_with_type
@@ -88,9 +90,10 @@ This option results in slower processing.""", )
         if args.overwrite is not True:
             logging.error('No Destination Path specified')
             return
-        dst_filepath = src_filepath
-
-    Path(dst_filepath).mkdir(exist_ok=True)
+        temp_dst = tempfile.TemporaryDirectory()
+        dst_filepath = temp_dst.name
+    else:
+        Path(dst_filepath).mkdir(exist_ok=True)
 
     subset = []
     if 'analyze' != args.utility:
@@ -123,6 +126,20 @@ This option results in slower processing.""", )
     else:
         parser.print_help()
 
+    if args.overwrite:
+        old_filenames = list(map(lambda file: file.name, Path(src_filepath).glob('*.txt')))
+        for file in Path(dst_filepath).glob('*.txt'):
+            if file.name in old_filenames:
+                (Path(src_filepath) / file.name).unlink()
+            logging.debug(f'overwriting {file.name}')
+            file.rename(Path(src_filepath) / file.name)
+        temp_dst.cleanup()
+    else:
+        new_filenames = list(map(lambda file: file.name, Path(dst_filepath).glob('*.txt')))
+        for file in Path(src_filepath).glob('*.txt'):
+            if file.name not in new_filenames:
+                logging.debug(f'Copying {file.name} to dst folder - no changes')
+                shutil.copy(file, Path(dst_filepath))
     duration = time.time() - t
     logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
 
