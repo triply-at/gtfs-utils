@@ -14,10 +14,6 @@ from .analyze import analyze_route_type
 def main():
     parser = argparse.ArgumentParser(description="GTFS Filter", formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(action="store", dest="src", help="Input filepath")
-    parser.add_argument('--destination', action="store", default=None, dest="dst", help="Output filepath")
-    parser.add_argument(
-        "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
-    )
     parser.add_argument(
         "-v",
         "--verbose",
@@ -31,6 +27,10 @@ def main():
 
     extract_parser = subparsers.add_parser('extract', help='extract')
 
+    extract_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
+    extract_parser.add_argument(
+        "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
+    )
     extract_parser.add_argument(
         "--bounds", action="store", dest="bounds", help="Filter boundary"
     )
@@ -67,6 +67,10 @@ This option results in slower processing.""", )
     )
 
     filter_route_type_parser = subparsers.add_parser('filter-route-type', help="removes route_types from dataset")
+    filter_route_type_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
+    filter_route_type_parser.add_argument(
+        "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
+    )
     filter_route_type_parser.add_argument('--route-type', nargs='+', type=int)
     filter_route_type_parser.add_argument(
         "-s",
