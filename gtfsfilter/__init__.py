@@ -1,6 +1,7 @@
 import logging
 
 import dask.dataframe as dd
+import pandas as pd
 from pathlib import Path
 
 __version__ = "0.0.1"
@@ -19,7 +20,7 @@ REQUIRED_GTFS_FILES = [
 ]
 
 
-def load_gtfs(filepath, subset=None):
+def load_gtfs(filepath, subset=None, lazy=True):
     if subset is None:
         subset = []
     df_dict = {}
@@ -30,7 +31,7 @@ def load_gtfs(filepath, subset=None):
                 filekey = file.stem
                 if filekey in REQUIRED_GTFS_FILES or filekey in subset:
                     logging.debug(f'Reading {filekey}')
-                    df_dict[filekey] = dd.read_csv(
+                    df_dict[filekey] = (dd if lazy else pd).read_csv(
                         file,
                         low_memory=False,
                         dtype={
