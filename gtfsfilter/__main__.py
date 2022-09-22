@@ -97,6 +97,7 @@ This option results in slower processing.""", )
         temp_dst = tempfile.TemporaryDirectory()
         dst_filepath = temp_dst.name
     else:
+        temp_dst = None
         Path(dst_filepath).mkdir(exist_ok=True)
 
     subset = []
@@ -130,7 +131,7 @@ This option results in slower processing.""", )
     else:
         parser.print_help()
 
-    if args.overwrite:
+    if temp_dst is not None and args.overwrite:
         old_filenames = list(map(lambda file: file.name, Path(src_filepath).glob('*.txt')))
         for file in Path(dst_filepath).glob('*.txt'):
             if file.name in old_filenames:
