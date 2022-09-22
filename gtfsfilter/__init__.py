@@ -85,6 +85,7 @@ def load_gtfs(filepath, subset=None):
                             "stop_name": "string",
                             "route_long_name": "string",
                             "route_short_name": "string",
+                            "platform_code": "string",
                         },
                     )
 
