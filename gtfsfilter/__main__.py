@@ -144,6 +144,10 @@ This option results in slower processing.""", )
         for file in Path(src_filepath).glob('*.txt'):
             if file.name not in new_filenames:
                 logging.debug(f'Copying {file.name} to dst folder - no changes')
+                if file.name == 'shapes.txt' and not args.shapes:
+                    continue
+                if file.name == 'transfers.txt' and not args.transfers:
+                    continue
                 shutil.copy(file, Path(dst_filepath))
     duration = time.time() - t
     logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
