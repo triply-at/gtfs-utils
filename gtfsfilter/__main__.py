@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import shutil
 
+from remove_shapes import remove_shapes
 from . import load_gtfs
 from .filter import filter_gtfs, remove_route_with_type
 from .analyze import analyze_route_type
@@ -128,6 +129,12 @@ This option results in slower processing.""", )
         logging.debug(f"Extracting bounds {bounds}")
         filter_gtfs(df_dict, bounds, dst_filepath, transfers=args.transfers, shapes=args.shapes,
                     complete_trips=args.complete_trips)
+    elif 'remove-shapes' == args.utility:
+        remove_shapes(df_dict, dst_filepath)
+        if args.overwrite:
+            shapes = Path(src_filepath) / 'shapes.txt'
+            if shapes.is_file():
+                shapes.unlink()
     else:
         parser.print_help()
 
