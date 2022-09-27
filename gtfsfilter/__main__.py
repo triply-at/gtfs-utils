@@ -28,7 +28,6 @@ def main():
 
     remove_shapes_parser = subparsers.add_parser('remove-shapes', help='extract')
 
-    remove_shapes_parser.add_argument("--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists")
     remove_shapes_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
     remove_shapes_parser.add_argument("--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists")
 
