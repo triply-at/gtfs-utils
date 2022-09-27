@@ -6,10 +6,10 @@ from pathlib import Path
 import tempfile
 import shutil
 
-from remove_shapes import remove_shapes
 from . import load_gtfs
 from .filter import filter_gtfs, remove_route_with_type
 from .analyze import analyze_route_type
+from .remove_shapes import remove_shapes
 
 
 def main():
