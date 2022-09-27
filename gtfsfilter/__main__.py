@@ -12,6 +12,112 @@ from .analyze import analyze_route_type
 from .remove_shapes import remove_shapes
 
 
+def cleanup(args, src_filepath, dst_filepath, temp_dst, skip_shapes=False):
+    if temp_dst is not None and args.overwrite:
+        old_filenames = list(map(lambda file: file.name, Path(src_filepath).glob('*.txt')))
+        for file in Path(dst_filepath).glob('*.txt'):
+            if file.name in old_filenames:
+                (Path(src_filepath) / file.name).unlink()
+            logging.debug(f'overwriting {file.name}')
+            file.rename(Path(src_filepath) / file.name)
+        temp_dst.cleanup()
+    else:
+        new_filenames = list(map(lambda file: file.name, Path(dst_filepath).glob('*.txt')))
+        for file in Path(src_filepath).glob('*.txt'):
+            if file.name not in new_filenames:
+                logging.debug(f'Copying {file.name} to dst folder - no changes')
+                if skip_shapes and file.name == 'shapes.txt':
+                    continue
+                shutil.copy(file, Path(dst_filepath))
+
+
+def load_gtfs_files(src, subset, only_subset=False):
+    t = time.time()
+    df_dict = load_gtfs(src, subset=subset, only_subset=only_subset)
+    duration = time.time() - t
+    logging.debug(f"Loaded {src} for {duration:.2f}s")
+    return df_dict
+
+
+def create_paths(args, destination=True):
+    src_filepath = args.src
+    dst_filepath = None
+    temp_dst = None
+    if destination:
+        dst_filepath = args.dst
+        if dst_filepath is None:
+            if args.overwrite is not True:
+                logging.error('No Destination Path specified')
+                exit(0)
+            temp_dst = tempfile.TemporaryDirectory()
+            dst_filepath = temp_dst.name
+        else:
+            temp_dst = None
+            dst_path = Path(dst_filepath)
+
+            if dst_path.is_dir():
+                if args.overwrite is not True:
+                    logging.error('Destination path already exists')
+                    exit(0)
+                shutil.rmtree(dst_path)
+
+            dst_path.mkdir(exist_ok=True)
+
+    return src_filepath, dst_filepath, temp_dst
+
+
+def start_remove_shapes(args):
+    src_filepath, dst_filepath, temp_dst = create_paths(args)
+    df_dict = load_gtfs_files(src_filepath, ['trips'], True)
+
+    remove_shapes(df_dict, dst_filepath)
+    if args.overwrite:
+        shapes = Path(src_filepath) / 'shapes.txt'
+        if shapes.is_file():
+            shapes.unlink()
+
+    cleanup(args, src_filepath, dst_filepath, temp_dst, skip_shapes=True)
+
+
+def start_remove_route_with_type(args):
+    src_filepath, dst_filepath, temp_dst = create_paths(args)
+    df_dict = load_gtfs_files(src_filepath, ['routes', 'trips', 'stop_times', 'calendar', 'calendar_dates'], True)
+
+    remove_route_with_type(df_dict, dst_filepath, args.route_type)
+
+    cleanup(args, src_filepath, dst_filepath, temp_dst)
+
+
+def start_filter(args):
+    src_filepath, dst_filepath, temp_dst = create_paths(args)
+    subset = []
+    if (Path(src_filepath) / 'transfers.txt').is_file():
+        subset.append('transfers')
+    if args.shapes:
+        subset.append('shapes')
+
+    df_dict = load_gtfs_files(src_filepath, subset)
+
+    t = time.time()
+
+    bounds = json.loads(args.bounds)
+    logging.debug(f"Extracting bounds {bounds}")
+    filter_gtfs(df_dict, bounds, dst_filepath, shapes=args.shapes,
+                complete_trips=args.complete_trips)
+
+    duration = time.time() - t
+    logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
+
+    cleanup(args, src_filepath, dst_filepath, temp_dst, skip_shapes=not args.shapes)
+
+
+def start_analyze(args):
+    src_filepath, dst_filepath, temp_dst = create_paths(args, False)
+    df_dict = load_gtfs_files(src_filepath, ['routes'], True)
+
+    analyze_route_type(df_dict)
+
+
 def main():
     parser = argparse.ArgumentParser(description="GTFS Filter", formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(action="store", dest="src", help="Input filepath")
@@ -63,14 +169,6 @@ the border will be available.
 This option will ensure that every trip stays complete.
 That means there will be stops also outside of the bounds.
 This option results in slower processing.""", )
-    extract_parser.add_argument(
-        "-t",
-        "--transfers",
-        action="store_true",
-        dest="transfers",
-        default=False,
-        help="Include transfers.txt",
-    )
 
     filter_route_type_parser = subparsers.add_parser('filter-route-type', help="removes route_types from dataset")
     filter_route_type_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
@@ -78,14 +176,6 @@ This option results in slower processing.""", )
         "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
     )
     filter_route_type_parser.add_argument('--route-type', nargs='+', type=int)
-    filter_route_type_parser.add_argument(
-        "-s",
-        "--shapes",
-        action="store_true",
-        dest="shapes",
-        default=False,
-        help="Include shapes.txt",
-    )
 
     analyze = subparsers.add_parser('analyze', help="list which route types are in the dataset")
 
@@ -94,75 +184,16 @@ This option results in slower processing.""", )
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(format="%(asctime)s-%(levelname)s-%(message)s", level=log_level)
 
-    src_filepath = args.src
-    dst_filepath = args.dst
-    if dst_filepath is None:
-        if args.overwrite is not True:
-            logging.error('No Destination Path specified')
-            return
-        temp_dst = tempfile.TemporaryDirectory()
-        dst_filepath = temp_dst.name
-    else:
-        temp_dst = None
-        Path(dst_filepath).mkdir(exist_ok=True)
-
-    subset = []
-    if 'analyze' != args.utility:
-        if 'filter-route-type' != args.utility:
-            if args.transfers:
-                subset.append('transfers')
-        if args.shapes:
-            subset.append('shapes')
-
-    # Load GTFS
-    t = time.time()
-    df_dict = load_gtfs(src_filepath, subset=subset)
-    duration = time.time() - t
-    logging.debug(f"Loaded {src_filepath} for {duration:.2f}s")
-
-    if 'analyze' == args.utility:
-        analyze_route_type(df_dict)
-        return
-
-    # Filter GTFS
-    t = time.time()
-    if 'filter-route-type' == args.utility:
-        logging.debug(f"Removing route-types {args.route_type}")
-        remove_route_with_type(df_dict, dst_filepath, args.route_type)
-    elif 'extract' == args.utility:
-        bounds = json.loads(args.bounds)
-        logging.debug(f"Extracting bounds {bounds}")
-        filter_gtfs(df_dict, bounds, dst_filepath, transfers=args.transfers, shapes=args.shapes,
-                    complete_trips=args.complete_trips)
-    elif 'remove-shapes' == args.utility:
-        remove_shapes(df_dict, dst_filepath)
-        if args.overwrite:
-            shapes = Path(src_filepath) / 'shapes.txt'
-            if shapes.is_file():
-                shapes.unlink()
+    if args.utility == 'analyze':
+        start_analyze(args)
+    elif args.utility == 'filter-route-type':
+        start_remove_route_with_type(args)
+    elif args.utility == 'extract':
+        start_filter(args)
+    elif args.utility == 'remove-shapes':
+        start_remove_shapes(args)
     else:
         parser.print_help()
-
-    if temp_dst is not None and args.overwrite:
-        old_filenames = list(map(lambda file: file.name, Path(src_filepath).glob('*.txt')))
-        for file in Path(dst_filepath).glob('*.txt'):
-            if file.name in old_filenames:
-                (Path(src_filepath) / file.name).unlink()
-            logging.debug(f'overwriting {file.name}')
-            file.rename(Path(src_filepath) / file.name)
-        temp_dst.cleanup()
-    else:
-        new_filenames = list(map(lambda file: file.name, Path(dst_filepath).glob('*.txt')))
-        for file in Path(src_filepath).glob('*.txt'):
-            if file.name not in new_filenames:
-                logging.debug(f'Copying {file.name} to dst folder - no changes')
-                if file.name == 'shapes.txt' and not args.shapes:
-                    continue
-                if file.name == 'transfers.txt' and not args.transfers:
-                    continue
-                shutil.copy(file, Path(dst_filepath))
-    duration = time.time() - t
-    logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
 
 
 if __name__ == "__main__":

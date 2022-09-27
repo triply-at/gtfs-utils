@@ -75,7 +75,7 @@ DTYPES = {
 }
 
 
-def load_gtfs(filepath, subset=None, lazy=True):
+def load_gtfs(filepath, subset=None, lazy=True, only_subset=False):
     if subset is None:
         subset = []
     df_dict = {}
@@ -84,7 +84,7 @@ def load_gtfs(filepath, subset=None, lazy=True):
         for file in p.iterdir():
             if file.is_file():
                 filekey = file.stem
-                if filekey in REQUIRED_GTFS_FILES or filekey in subset:
+                if (filekey in REQUIRED_GTFS_FILES and not only_subset) or filekey in subset:
                     logging.debug(f'Reading {filekey}')
                     sample_df = pd.read_csv(file, nrows=2)
                     

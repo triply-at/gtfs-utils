@@ -7,8 +7,29 @@ import shapely
 import geopandas as gpd
 
 
-def cleanup_stops(df_dict, output_dir: Path):
-    pass
+def cleanup_stop_transfers(df_dict, output_dir: Path, all_stop_ids):
+    t = time.time()
+    mask = df_dict["stops"]["stop_id"].isin(all_stop_ids)
+    df_dict["stops"] = df_dict["stops"][mask]
+    df_dict["stops"].to_csv(
+        output_dir / "stops.txt", single_file=True, index=False
+    )
+    duration = time.time() - t
+    logging.debug(f"Filtered stops.txt for {duration:.2f}s")
+
+    # filter transfers.txt
+    if "transfers" in df_dict:
+        t = time.time()
+        mask = df_dict["transfers"]["from_stop_id"].isin(all_stop_ids) & df_dict[
+            "transfers"
+        ]["to_stop_id"].isin(all_stop_ids)
+        df_dict["transfers"] = df_dict["transfers"][mask]
+        df_dict["transfers"].to_csv(
+            output_dir / "transfers.txt", single_file=True, index=False
+        )
+        duration = time.time() - t
+        logging.debug(f"Filtered transfers.txt for {duration:.2f}s")
+
 
 def cleanup_calendar(df_dict, output_dir: Path):
     if "calendar" in df_dict or "calendar_dates" in df_dict:
@@ -36,7 +57,7 @@ def cleanup_calendar(df_dict, output_dir: Path):
             duration = time.time() - t
             logging.debug(f"Filtered calendar_dates.txt for {duration:.2f}s")
 
-    del service_ids
+        del service_ids
 
 
 def remove_route_with_type(df_dict, output, types):
@@ -56,12 +77,16 @@ def remove_route_with_type(df_dict, output, types):
 
     mask = df_dict['stop_times']['trip_id'].isin(unique_trip_ids)
     df_dict['stop_times'] = df_dict['stop_times'][~mask]
+    all_stop_ids = df_dict['stop_times']['stop_id'].unique().compute()
     df_dict['stop_times'].to_csv(output_dir / "stop_times.txt", single_file=True, index=False)
+
+    cleanup_stop_transfers(df_dict, output_dir, all_stop_ids)
+    del all_stop_ids
 
     cleanup_calendar(df_dict, output_dir)
 
 
-def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False, complete_trips=False):
+def filter_gtfs(df_dict, filter_geometry, output, shapes=False, complete_trips=False):
     output_dir = Path(output)
 
     if isinstance(filter_geometry, list):
@@ -114,28 +139,7 @@ def filter_gtfs(df_dict, filter_geometry, output, transfers=False, shapes=False,
     duration = time.time() - t
     logging.debug(f"Filtered trips.txt for {duration:.2f}s")
 
-    # filter stops.txt -
-    t = time.time()
-    mask = df_dict["stops"]["stop_id"].isin(all_stop_ids)
-    df_dict["stops"] = df_dict["stops"][mask]
-    df_dict["stops"].to_csv(
-        output_dir / "stops.txt", single_file=True, index=False
-    )
-    duration = time.time() - t
-    logging.debug(f"Filtered stops.txt for {duration:.2f}s")
-
-    # filter transfers.txt
-    if transfers and "transfers" in df_dict:
-        t = time.time()
-        mask = df_dict["transfers"]["from_stop_id"].isin(all_stop_ids) & df_dict[
-            "transfers"
-        ]["to_stop_id"].isin(all_stop_ids)
-        df_dict["transfers"] = df_dict["transfers"][mask]
-        df_dict["transfers"].to_csv(
-            output_dir / "transfers.txt", single_file=True, index=False
-        )
-        duration = time.time() - t
-        logging.debug(f"Filtered transfers.txt for {duration:.2f}s")
+    cleanup_stop_transfers(df_dict, output_dir, all_stop_ids)
 
     if shapes and "shapes" in df_dict:
         raise NotImplementedError()
