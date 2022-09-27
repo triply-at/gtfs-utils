@@ -26,6 +26,10 @@ def main():
 
     subparsers = parser.add_subparsers(help='Utilities', dest='utility')
 
+    remove_shapes_parser = subparsers.add_parser('remove-shapes', help='extract')
+
+    remove_shapes_parser.add_argument("--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists")
+
     extract_parser = subparsers.add_parser('extract', help='extract')
 
     extract_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
