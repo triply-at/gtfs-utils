@@ -50,5 +50,5 @@ Unzip a gtfs file, cut it to bounds and zip it again
 ```
 unzip latest.gtfs.zip -d latest.gtfs
 gtfsfilter  latest.gtfs  extract --bounds="[7.4588,46.9844,11.6545,48.932]" --complete-trips cut.gtfs
-zip -j cut.gtfs.zip latest.gtfs/*.txt
+zip -j cut.gtfs.zip cut.gtfs/*.txt
 ```
