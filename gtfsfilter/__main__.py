@@ -81,7 +81,7 @@ def start_remove_shapes(args):
 
 def start_remove_route_with_type(args):
     src_filepath, dst_filepath, temp_dst = create_paths(args)
-    df_dict = load_gtfs_files(src_filepath, ['routes', 'trips', 'stop_times', 'calendar', 'calendar_dates'], True)
+    df_dict = load_gtfs_files(src_filepath, ['stops', 'routes', 'trips', 'stop_times', 'calendar', 'calendar_dates'], True)
 
     remove_route_with_type(df_dict, dst_filepath, args.route_type)
 
