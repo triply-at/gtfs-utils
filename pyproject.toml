@@ -15,14 +15,16 @@ dependencies = [
     "numexpr>=2.10.2",
     "numpy>=2.2.4",
     "pandas>=2.2.3",
+    "rich>=13.9.4",
     "shapely>=2.0.7",
+    "typer>=0.15.2",
 ]
 
 [project.urls]
 Repository = "https://github.com/triply-at/gtfsfilter.git"
 
-#[project.scripts]
-#gtfs-utils = "gtfs_utils.__main__:main"
+[project.scripts]
+gtfs-utils = "gtfs_utils.__main__:main"
 
 [build-system]
 requires = ["setuptools"]
@@ -30,7 +32,7 @@ build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.15.0",
     "pre-commit>=4.1.0",
+    "pytest>=8.3.5",
     "ruff>=0.11.0",
 ]

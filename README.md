@@ -1,5 +1,7 @@
 # gtfs-utils
 
+:construction: **Work in progress** - This library is being combined with [gtfsutils](https://github.com/triply-at/gtfsutils/tree/master) :construction:
+
 Utility library for working with gtfs files
 
 ## Installation

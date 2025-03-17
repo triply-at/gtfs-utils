@@ -6,7 +6,10 @@ from pathlib import Path
 import tempfile
 import shutil
 
-from . import load_gtfs
+import typer
+
+import gtfs_utils.info
+from .utils import load_gtfs
 from .filter import filter_gtfs, remove_route_with_type
 from .analyze import analyze_route_type
 from .remove_shapes import remove_shapes
@@ -131,7 +134,13 @@ def start_analyze(args):
     analyze_route_type(df_dict)
 
 
+app = typer.Typer()
+app.add_typer(gtfs_utils.info.app)
+
+
 def main():
+    app()
+    return
     parser = argparse.ArgumentParser(
         description="GTFS Filter", formatter_class=argparse.RawTextHelpFormatter
     )
