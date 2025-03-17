@@ -19,6 +19,7 @@ REQUIRED_GTFS_FILES = [
     # 'feedinfo'
 ]
 
+# https://developers.google.com/transit/gtfs/reference
 DTYPES = {
     "agency_id": "string",
     "agency_name": "string",
@@ -84,15 +85,17 @@ def load_gtfs(filepath, subset=None, lazy=True, only_subset=False):
         for file in p.iterdir():
             if file.is_file():
                 filekey = file.stem
-                if (filekey in REQUIRED_GTFS_FILES and not only_subset) or filekey in subset:
-                    logging.debug(f'Reading {filekey}')
+                if (
+                    filekey in REQUIRED_GTFS_FILES and not only_subset
+                ) or filekey in subset:
+                    logging.debug(f"Reading {filekey}")
                     sample_df = pd.read_csv(file, nrows=2)
-                    
+
                     for col in sample_df.columns:
                         if col not in DTYPES:
-                            logging.warning(col + ' not in dtypes - using type string')
-                            DTYPES[col] = 'string'
-                    
+                            logging.warning(col + " not in dtypes - using type string")
+                            DTYPES[col] = "string"
+
                     df_dict[filekey] = (dd if lazy else pd).read_csv(
                         file,
                         low_memory=False,

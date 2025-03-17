@@ -11,9 +11,7 @@ def cleanup_stop_transfers(df_dict, output_dir: Path, all_stop_ids):
     t = time.time()
     mask = df_dict["stops"]["stop_id"].isin(all_stop_ids)
     df_dict["stops"] = df_dict["stops"][mask]
-    df_dict["stops"].to_csv(
-        output_dir / "stops.txt", single_file=True, index=False
-    )
+    df_dict["stops"].to_csv(output_dir / "stops.txt", single_file=True, index=False)
     duration = time.time() - t
     logging.debug(f"Filtered stops.txt for {duration:.2f}s")
 
@@ -63,22 +61,24 @@ def cleanup_calendar(df_dict, output_dir: Path):
 def remove_route_with_type(df_dict, output, types):
     output_dir = Path(output)
 
-    mask = df_dict['routes']['route_type'].isin(types)
-    unique_route_ids = df_dict['routes'][mask]['route_id'].unique().compute()
-    df_dict['routes'] = df_dict["routes"][~mask]
-    df_dict['routes'].to_csv(output_dir / "routes.txt", single_file=True, index=False)
+    mask = df_dict["routes"]["route_type"].isin(types)
+    unique_route_ids = df_dict["routes"][mask]["route_id"].unique().compute()
+    df_dict["routes"] = df_dict["routes"][~mask]
+    df_dict["routes"].to_csv(output_dir / "routes.txt", single_file=True, index=False)
 
-    mask = df_dict['trips']['route_id'].isin(unique_route_ids)
-    unique_trip_ids = df_dict['trips'][mask]['trip_id'].unique().compute()
-    df_dict['trips'] = df_dict['trips'][~mask]
-    df_dict['trips'].to_csv(output_dir / "trips.txt", single_file=True, index=False)
+    mask = df_dict["trips"]["route_id"].isin(unique_route_ids)
+    unique_trip_ids = df_dict["trips"][mask]["trip_id"].unique().compute()
+    df_dict["trips"] = df_dict["trips"][~mask]
+    df_dict["trips"].to_csv(output_dir / "trips.txt", single_file=True, index=False)
 
     del unique_route_ids
 
-    mask = df_dict['stop_times']['trip_id'].isin(unique_trip_ids)
-    df_dict['stop_times'] = df_dict['stop_times'][~mask]
-    all_stop_ids = df_dict['stop_times']['stop_id'].unique().compute()
-    df_dict['stop_times'].to_csv(output_dir / "stop_times.txt", single_file=True, index=False)
+    mask = df_dict["stop_times"]["trip_id"].isin(unique_trip_ids)
+    df_dict["stop_times"] = df_dict["stop_times"][~mask]
+    all_stop_ids = df_dict["stop_times"]["stop_id"].unique().compute()
+    df_dict["stop_times"].to_csv(
+        output_dir / "stop_times.txt", single_file=True, index=False
+    )
 
     cleanup_stop_transfers(df_dict, output_dir, all_stop_ids)
     del all_stop_ids

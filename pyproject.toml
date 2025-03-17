@@ -1,0 +1,36 @@
+[project]
+name = "gtfs-utils"
+version = "3.6.0"
+description = "Utility library for working with gtfs files"
+readme = "README.md"
+authors = [
+    { name = "Luis Nachtigall", email = "l.nachtigall@triply.at" },
+    { name = "Chris Stelzmüller", email = "c.stelzmueller@triply.at" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "bottleneck>=1.4.2",
+    "dask[complete]>=2025.2.0",
+    "geopandas>=1.0.1",
+    "numexpr>=2.10.2",
+    "numpy>=2.2.4",
+    "pandas>=2.2.3",
+    "shapely>=2.0.7",
+]
+
+[project.urls]
+Repository = "https://github.com/triply-at/gtfsfilter.git"
+
+#[project.scripts]
+#gtfs-utils = "gtfs_utils.__main__:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pre-commit>=4.1.0",
+    "ruff>=0.11.0",
+]

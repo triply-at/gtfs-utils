@@ -1,6 +1,6 @@
-# gtfsutils
+# gtfs-utils
 
-GTFS command-line filtering tool
+Utility library for working with gtfs files
 
 ## Installation
 

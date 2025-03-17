@@ -14,19 +14,23 @@ from .remove_shapes import remove_shapes
 
 def cleanup(args, src_filepath, dst_filepath, temp_dst, skip_shapes=False):
     if temp_dst is not None and args.overwrite:
-        old_filenames = list(map(lambda file: file.name, Path(src_filepath).glob('*.txt')))
-        for file in Path(dst_filepath).glob('*.txt'):
+        old_filenames = list(
+            map(lambda file: file.name, Path(src_filepath).glob("*.txt"))
+        )
+        for file in Path(dst_filepath).glob("*.txt"):
             if file.name in old_filenames:
                 (Path(src_filepath) / file.name).unlink()
-            logging.debug(f'overwriting {file.name}')
+            logging.debug(f"overwriting {file.name}")
             file.rename(Path(src_filepath) / file.name)
         temp_dst.cleanup()
     else:
-        new_filenames = list(map(lambda file: file.name, Path(dst_filepath).glob('*.txt')))
-        for file in Path(src_filepath).glob('*.txt'):
+        new_filenames = list(
+            map(lambda file: file.name, Path(dst_filepath).glob("*.txt"))
+        )
+        for file in Path(src_filepath).glob("*.txt"):
             if file.name not in new_filenames:
-                logging.debug(f'Copying {file.name} to dst folder - no changes')
-                if skip_shapes and file.name == 'shapes.txt':
+                logging.debug(f"Copying {file.name} to dst folder - no changes")
+                if skip_shapes and file.name == "shapes.txt":
                     continue
                 shutil.copy(file, Path(dst_filepath))
 
@@ -47,7 +51,7 @@ def create_paths(args, destination=True):
         dst_filepath = args.dst
         if dst_filepath is None:
             if args.overwrite is not True:
-                logging.error('No Destination Path specified')
+                logging.error("No Destination Path specified")
                 exit(0)
             temp_dst = tempfile.TemporaryDirectory()
             dst_filepath = temp_dst.name
@@ -57,7 +61,7 @@ def create_paths(args, destination=True):
 
             if dst_path.is_dir():
                 if args.overwrite is not True:
-                    logging.error('Destination path already exists')
+                    logging.error("Destination path already exists")
                     exit(0)
                 shutil.rmtree(dst_path)
 
@@ -68,11 +72,11 @@ def create_paths(args, destination=True):
 
 def start_remove_shapes(args):
     src_filepath, dst_filepath, temp_dst = create_paths(args)
-    df_dict = load_gtfs_files(src_filepath, ['trips'], True)
+    df_dict = load_gtfs_files(src_filepath, ["trips"], True)
 
     remove_shapes(df_dict, dst_filepath)
     if args.overwrite:
-        shapes = Path(src_filepath) / 'shapes.txt'
+        shapes = Path(src_filepath) / "shapes.txt"
         if shapes.is_file():
             shapes.unlink()
 
@@ -81,7 +85,11 @@ def start_remove_shapes(args):
 
 def start_remove_route_with_type(args):
     src_filepath, dst_filepath, temp_dst = create_paths(args)
-    df_dict = load_gtfs_files(src_filepath, ['stops', 'routes', 'trips', 'stop_times', 'calendar', 'calendar_dates'], True)
+    df_dict = load_gtfs_files(
+        src_filepath,
+        ["stops", "routes", "trips", "stop_times", "calendar", "calendar_dates"],
+        True,
+    )
 
     remove_route_with_type(df_dict, dst_filepath, args.route_type)
 
@@ -91,10 +99,10 @@ def start_remove_route_with_type(args):
 def start_filter(args):
     src_filepath, dst_filepath, temp_dst = create_paths(args)
     subset = []
-    if (Path(src_filepath) / 'transfers.txt').is_file():
-        subset.append('transfers')
+    if (Path(src_filepath) / "transfers.txt").is_file():
+        subset.append("transfers")
     if args.shapes:
-        subset.append('shapes')
+        subset.append("shapes")
 
     df_dict = load_gtfs_files(src_filepath, subset)
 
@@ -102,8 +110,13 @@ def start_filter(args):
 
     bounds = json.loads(args.bounds)
     logging.debug(f"Extracting bounds {bounds}")
-    filter_gtfs(df_dict, bounds, dst_filepath, shapes=args.shapes,
-                complete_trips=args.complete_trips)
+    filter_gtfs(
+        df_dict,
+        bounds,
+        dst_filepath,
+        shapes=args.shapes,
+        complete_trips=args.complete_trips,
+    )
 
     duration = time.time() - t
     logging.debug(f"Filtered {src_filepath} for {duration:.2f}s")
@@ -113,13 +126,15 @@ def start_filter(args):
 
 def start_analyze(args):
     src_filepath, dst_filepath, temp_dst = create_paths(args, False)
-    df_dict = load_gtfs_files(src_filepath, ['routes'], True)
+    df_dict = load_gtfs_files(src_filepath, ["routes"], True)
 
     analyze_route_type(df_dict)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="GTFS Filter", formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="GTFS Filter", formatter_class=argparse.RawTextHelpFormatter
+    )
     parser.add_argument(action="store", dest="src", help="Input filepath")
     parser.add_argument(
         "-v",
@@ -130,16 +145,22 @@ def main():
         help="Verbose output",
     )
 
-    subparsers = parser.add_subparsers(help='Utilities', dest='utility')
+    subparsers = parser.add_subparsers(help="Utilities", dest="utility")
 
-    remove_shapes_parser = subparsers.add_parser('remove-shapes', help='extract')
+    remove_shapes_parser = subparsers.add_parser("remove-shapes", help="extract")
 
-    remove_shapes_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
-    remove_shapes_parser.add_argument("--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists")
+    remove_shapes_parser.add_argument(
+        nargs="?", default=None, dest="dst", help="Output filepath"
+    )
+    remove_shapes_parser.add_argument(
+        "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
+    )
 
-    extract_parser = subparsers.add_parser('extract', help='extract')
+    extract_parser = subparsers.add_parser("extract", help="extract")
 
-    extract_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
+    extract_parser.add_argument(
+        nargs="?", default=None, dest="dst", help="Output filepath"
+    )
     extract_parser.add_argument(
         "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
     )
@@ -168,29 +189,34 @@ some stops inside the borders. The part of the trip inside
 the border will be available. 
 This option will ensure that every trip stays complete.
 That means there will be stops also outside of the bounds.
-This option results in slower processing.""", )
+This option results in slower processing.""",
+    )
 
-    filter_route_type_parser = subparsers.add_parser('filter-route-type', help="removes route_types from dataset")
-    filter_route_type_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
+    filter_route_type_parser = subparsers.add_parser(
+        "filter-route-type", help="removes route_types from dataset"
+    )
+    filter_route_type_parser.add_argument(
+        nargs="?", default=None, dest="dst", help="Output filepath"
+    )
     filter_route_type_parser.add_argument(
         "--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists"
     )
-    filter_route_type_parser.add_argument('--route-type', nargs='+', type=int)
+    filter_route_type_parser.add_argument("--route-type", nargs="+", type=int)
 
-    analyze = subparsers.add_parser('analyze', help="list which route types are in the dataset")
+    subparsers.add_parser("analyze", help="list which route types are in the dataset")
 
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(format="%(asctime)s-%(levelname)s-%(message)s", level=log_level)
 
-    if args.utility == 'analyze':
+    if args.utility == "analyze":
         start_analyze(args)
-    elif args.utility == 'filter-route-type':
+    elif args.utility == "filter-route-type":
         start_remove_route_with_type(args)
-    elif args.utility == 'extract':
+    elif args.utility == "extract":
         start_filter(args)
-    elif args.utility == 'remove-shapes':
+    elif args.utility == "remove-shapes":
         start_remove_shapes(args)
     else:
         parser.print_help()
