@@ -109,19 +109,22 @@ def load_gtfs(
         subset = []
 
     df_dict: Dict[str, pd.DataFrame | dd.DataFrame] = {}
-    p = Path(filepath)
+    p: Path = Path(filepath)
 
     files_to_read = (
         subset if only_subset else subset + [file.file for file in REQUIRED_FILES]
     )
 
+    if not p.exists():
+        raise Exception(f"{p} Does not exist")
+
     if p.is_dir():
-        for file in p.iterdir():
-            if file.is_file():
-                file_key = file.stem
+        for file_name in p.iterdir():
+            if file_name.is_file():
+                file_key = file_name.stem
                 if file_key in files_to_read:
                     logging.debug(f"Reading {file_key}")
-                    sample_df = pd.read_csv(file, nrows=2)
+                    sample_df = pd.read_csv(file_name, nrows=2)
 
                     for col in sample_df.columns:
                         if col not in DTYPES:
@@ -129,31 +132,47 @@ def load_gtfs(
                             DTYPES[col] = "string"
 
                     df_dict[file_key] = (dd if lazy else pd).read_csv(
-                        file,
+                        file_name,
                         low_memory=False,
                         dtype=DTYPES,
                     )
 
     elif p.suffix == ".zip":
         with ZipFile(filepath) as zip_file:
-            for file in zip_file.namelist():
-                file_key = Path(file).stem
+            for file_name in zip_file.namelist():
+                file_key = Path(file_name).stem
                 if file_key in files_to_read:
                     logging.debug(f"Reading {file_key}")
-                    sample_df = pd.read_csv(zip_file.open(file), nrows=2)
+                    with zip_file.open(file_name) as file:
+                        sample_df = pd.read_csv(file, encoding="utf8", nrows=2)
 
-                    for col in sample_df.columns:
-                        if col not in DTYPES:
-                            logging.warning(col + " not in dtypes - using type string")
-                            DTYPES[col] = "string"
-
-                    df_dict[file_key] = (dd if lazy else pd).read_csv(
-                        zip_file.open(file), low_memory=False, dtype=DTYPES
-                    )
+                        for col in sample_df.columns:
+                            if col not in DTYPES:
+                                logging.warning(
+                                    col + " not in dtypes - using type string"
+                                )
+                                DTYPES[col] = "string"
+                    if lazy:
+                        df_dict[file_key] = dd.read_csv(
+                            f"zip://{file_name}",
+                            encoding="utf8",
+                            low_memory=False,
+                            dtype=DTYPES,
+                            storage_options={"fo": p},
+                        )
+                    else:
+                        with zip_file.open(file_name) as file:
+                            df_dict[file_key] = pd.read_csv(
+                                file,
+                                encoding="utf8",
+                                low_memory=False,
+                                dtype=DTYPES,
+                            )
     else:
         raise Exception(f"{p} is no directory or zipfile")
 
     return df_dict
+
 
 def compute_if_necessary(*args):
     """

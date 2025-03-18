@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 import pandas as pd
@@ -5,12 +6,14 @@ import pytest
 
 import gtfs_utils
 
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 def test__load_sample_gtfs():
     # Sample feed from:
     # https://developers.google.com/transit/gtfs/examples/gtfs-feed
     # https://developers.google.com/static/transit/gtfs/examples/sample-feed.zip
-    filepath = "tests/data/sample-feed.zip"
+    filepath = "data/sample-feed.zip"
     df_dict = gtfs_utils.load_gtfs(filepath, lazy=False)
 
     assert isinstance(df_dict, dict)
@@ -18,10 +21,19 @@ def test__load_sample_gtfs():
         assert isinstance(df_dict[key], pd.DataFrame)
 
 
+@pytest.fixture(params=["data/sample-feed.gtfs", "data/sample-feed.zip"])
+def sample_gtfs_path(request):
+    return request.param
+
+
+@pytest.fixture(params=[True, False])
+def lazy(request):
+    return request.param
+
+
 @pytest.fixture
-def sample_gtfs():
-    filepath = "tests/data/sample-feed.zip"
-    return gtfs_utils.load_gtfs(filepath, lazy=False)
+def sample_gtfs(sample_gtfs_path, lazy):
+    return gtfs_utils.load_gtfs(sample_gtfs_path, lazy=lazy)
 
 
 def test__get_bounding_box(sample_gtfs):
