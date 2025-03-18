@@ -1,7 +1,6 @@
 import logging
 import shutil
 import tempfile
-import time
 from pathlib import Path
 from typing import Annotated, Optional, List
 
@@ -9,8 +8,8 @@ import typer
 
 from gtfs_utils import load_gtfs
 from gtfs_utils.cli_utils import SourceArgument, LazyOption
-from gtfs_utils.filter import filter_gtfs
-from gtfs_utils.utils import OPTIONAL_FILES
+from gtfs_utils.filter import do_filter, BoundsFilter
+from gtfs_utils.utils import OPTIONAL_FILES, Timer
 
 app = typer.Typer()
 
@@ -70,14 +69,20 @@ def filter_function(
     lazy: LazyOption = False,
 ):
     df_dict = load_gtfs(src, lazy=lazy, subset=OPTIONAL_FILES)
-
     temp_dir = Path(tempfile.mkdtemp())
 
-    t = time.time()
-    filter_gtfs(df_dict, bounds.bounds, temp_dir, True, complete_trips=complete_trips)
+    filters = []
+    if bounds is not None:
+        filters.append(
+            BoundsFilter(
+                bounds=bounds.bounds,
+                complete_trips=complete_trips,
+            )
+        )
 
-    duration = time.time() - t
-    logging.debug(f"Filtered {src.name} for {duration:.2f}s")
+    with Timer("Finished filtering in %.2f seconds"):
+        do_filter(df_dict, filters)
+    # filter_gtfs(df_dict, bounds.bounds, temp_dir, True, complete_trips=complete_trips)
     logging.debug(f'Wrote file to temp directory "{temp_dir}"')
 
     # copy tempdir to output
@@ -85,6 +90,7 @@ def filter_function(
         raise NotImplementedError(
             "Output file exists or is a zip file - currently not yet supported"
         )
+
     shutil.copytree(temp_dir, output)
+
     print(f'Wrote output to "{output}"')
-    # cleanup(args, src_filepath, dst_filepath, temp_dst, skip_shapes=not args.shapes)...

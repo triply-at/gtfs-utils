@@ -18,22 +18,22 @@ from .remove_shapes import remove_shapes
 def cleanup(args, src_filepath, dst_filepath, temp_dst, skip_shapes=False):
     if temp_dst is not None and args.overwrite:
         old_filenames = list(
-            map(lambda file: file.name, Path(src_filepath).glob("*.txt"))
+            map(lambda file: file.description, Path(src_filepath).glob("*.txt"))
         )
         for file in Path(dst_filepath).glob("*.txt"):
-            if file.name in old_filenames:
-                (Path(src_filepath) / file.name).unlink()
-            logging.debug(f"overwriting {file.name}")
-            file.rename(Path(src_filepath) / file.name)
+            if file.description in old_filenames:
+                (Path(src_filepath) / file.description).unlink()
+            logging.debug(f"overwriting {file.description}")
+            file.rename(Path(src_filepath) / file.description)
         temp_dst.cleanup()
     else:
         new_filenames = list(
-            map(lambda file: file.name, Path(dst_filepath).glob("*.txt"))
+            map(lambda file: file.description, Path(dst_filepath).glob("*.txt"))
         )
         for file in Path(src_filepath).glob("*.txt"):
-            if file.name not in new_filenames:
-                logging.debug(f"Copying {file.name} to dst folder - no changes")
-                if skip_shapes and file.name == "shapes.txt":
+            if file.description not in new_filenames:
+                logging.debug(f"Copying {file.description} to dst folder - no changes")
+                if skip_shapes and file.description == "shapes.txt":
                     continue
                 shutil.copy(file, Path(dst_filepath))
 

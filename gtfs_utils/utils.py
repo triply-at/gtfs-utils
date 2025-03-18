@@ -1,7 +1,8 @@
 import logging
+import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar, Mapping
+from typing import TypeVar, Mapping, Callable, List
 from zipfile import ZipFile
 
 import dask.dataframe as dd
@@ -31,6 +32,9 @@ class GtfsFile(GtfsFileMixin, Enum):
 
 
 class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__()
+
     def save_file(self, file: str, output_dir: Path) -> None:
         if file not in self:
             raise KeyError(f"{file} not found in GTFS data")
@@ -41,6 +45,52 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
             else {"index": False}
         )
         self[file].to_csv(output_dir / f"{file}.txt", **save_kwargs)
+
+    def agency(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.AGENCY.file]
+
+    def stops(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.STOPS.file]
+
+    def routes(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.ROUTES.file]
+
+    def trips(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.TRIPS.file]
+
+    def calendar(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.CALENDAR.file]
+
+    def calendar_dates(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.CALENDAR_DATES.file]
+
+    def stop_times(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.STOP_TIMES.file]
+
+    def shapes(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.SHAPES.file]
+
+    def frequencies(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.FREQUENCIES.file]
+
+    def feed_info(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.FEED_INFO.file]
+
+    def transfers(self) -> pd.DataFrame | dd.DataFrame:
+        return self[GtfsFile.TRANSFERS.file]
+
+    def filter(
+        self,
+        file: str,
+        where: Callable[[pd.DataFrame], pd.Series],
+        return_cols: str | List[str] = None,
+    ) -> pd.Series | pd.DataFrame:
+        if not self.__contains__(file):
+            return pd.DataFrame(columns=return_cols) if return_cols else None
+
+        mask = where(self[file])
+        self[file] = self[file][mask]  # noqa
+        return self[file][return_cols] if return_cols else None
 
 
 REQUIRED_FILES = [f for f in GtfsFile if f.required]
@@ -125,7 +175,7 @@ def load_gtfs(
     p: Path = Path(filepath)
 
     files_to_read = (
-        subset if only_subset else subset + [file.file for file in REQUIRED_FILES]
+        subset if only_subset else (subset + [file.file for file in REQUIRED_FILES])
     )
 
     if not p.exists():
@@ -207,3 +257,18 @@ def compute_if_necessary(*args: T) -> T:
     if len(args) == 1:
         return args[0]
     return args
+
+
+class Timer:
+    def __init__(
+        self, description: str = "Ran for %.2f seconds", log_level=logging.DEBUG
+    ):
+        self.log_level = log_level
+        self.description = description
+
+    def __enter__(self):
+        self.start = time.time()
+
+    def __exit__(self, *args):
+        self.end = time.time()
+        logging.log(self.log_level, self.description, self.end - self.start)
