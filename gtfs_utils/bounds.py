@@ -1,5 +1,3 @@
-from typing import Annotated
-
 import typer
 from rich.console import Console
 
@@ -20,7 +18,7 @@ def bounds(
 
     console = Console()
     console.print("Bounding Box:\t", style="bold", end="")
-    console.print(str(bbox))
+    console.print(str(list(bbox)))
 
 
 def get_bounding_box(df_dict: GtfsDict) -> tuple[float, float, float, float]:

@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, TypeAlias
+from typing import TypeVar, Mapping
 from zipfile import ZipFile
 
 import dask.dataframe as dd
@@ -27,11 +27,24 @@ class GtfsFile(GtfsFileMixin, Enum):
     SHAPES = "shapes", False
     FREQUENCIES = "frequencies", False
     FEED_INFO = "feed_info", False
+    TRANSFERS = "transfers", False
 
 
-GtfsDict: TypeAlias = Dict[str, dd.DataFrame | pd.DataFrame]
+class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
+    def save_file(self, file: str, output_dir: Path) -> None:
+        if file not in self:
+            raise KeyError(f"{file} not found in GTFS data")
+        df = self[file]
+        save_kwargs = (
+            {"single_file": True, "index": False}
+            if is_dask_collection(df)
+            else {"index": False}
+        )
+        self[file].to_csv(output_dir / f"{file}.txt", **save_kwargs)
+
 
 REQUIRED_FILES = [f for f in GtfsFile if f.required]
+OPTIONAL_FILES = [f for f in GtfsFile if not f.required]
 
 # https://developers.google.com/transit/gtfs/reference
 DTYPES = {
@@ -108,7 +121,7 @@ def load_gtfs(
     if subset is None:
         subset = []
 
-    df_dict: Dict[str, pd.DataFrame | dd.DataFrame] = {}
+    df_dict = GtfsDict()
     p: Path = Path(filepath)
 
     files_to_read = (
@@ -174,7 +187,10 @@ def load_gtfs(
     return df_dict
 
 
-def compute_if_necessary(*args):
+T = TypeVar("T")
+
+
+def compute_if_necessary(*args: T) -> T:
     """
     Computes the incoming args if necessary
     :param args:
@@ -183,6 +199,11 @@ def compute_if_necessary(*args):
     if args is None:
         return args
     if is_dask_collection(args[0]):
-        return dd.compute(*args)
+        res = dd.compute(*args)
+        if len(res) == 1:
+            return res[0]
+        return res
 
+    if len(args) == 1:
+        return args[0]
     return args

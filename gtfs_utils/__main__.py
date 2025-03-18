@@ -8,7 +8,7 @@ import shutil
 from typing import Annotated, Optional
 import typer
 
-from gtfs_utils import version, info, bounds
+from gtfs_utils import version, info, bounds, filter_command
 from .utils import load_gtfs
 from .filter import filter_gtfs, remove_route_with_type
 from .analyze import analyze_route_type
@@ -137,9 +137,10 @@ def start_analyze(args):
 app = typer.Typer()
 app.add_typer(info.app)
 app.add_typer(bounds.app)
+app.add_typer(filter_command.app)
 
 
-def version_callback(value: bool, ctx: typer.Context):
+def version_callback(value: bool):
     if value:
         print(f"{__name__} {version.version}")
         raise typer.Exit()
@@ -167,7 +168,9 @@ def common(
     ] = False,
 ):
     log_level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(format="%(asctime)s-%(levelname)s-%(message)s", level=log_level)
+    logging.basicConfig(
+        format="[%(asctime)s] %(levelname)s %(message)s", level=log_level
+    )
 
 
 def main():

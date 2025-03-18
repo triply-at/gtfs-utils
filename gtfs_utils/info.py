@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .bounds import get_bounding_box
-from .cli_utils import SourceArgument
+from .cli_utils import SourceArgument, LazyOption
 from .utils import load_gtfs, GtfsDict, compute_if_necessary
 
 app = typer.Typer()
@@ -18,7 +18,7 @@ app = typer.Typer()
 @app.command(help="Get information about a GTFS feed")
 def info(
     src: SourceArgument,
-    lazy: Annotated[bool, typer.Option(help="Use dask to load files")] = False,
+    lazy: LazyOption = False,
 ):
     df_dict = load_gtfs(src, lazy=lazy)
     gtfs_info = get_info(df_dict)
