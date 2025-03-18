@@ -145,9 +145,10 @@ def version_callback(value: bool, ctx: typer.Context):
         raise typer.Exit()
 
 
+# noinspection PyUnusedLocal
 @app.callback()
 def common(
-    version: Annotated[
+    print_version: Annotated[
         Optional[bool],
         typer.Option(
             "--version/",
@@ -156,8 +157,17 @@ def common(
             is_eager=True,
         ),
     ] = False,
+    verbose: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--verbose",
+            "-v",
+            help="Verbose output",
+        ),
+    ] = False,
 ):
-    pass
+    log_level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(format="%(asctime)s-%(levelname)s-%(message)s", level=log_level)
 
 
 def main():

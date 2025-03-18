@@ -9,11 +9,11 @@ import gtfs_utils
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-def test__load_sample_gtfs():
+def test__load_sample_gtfs(data_dir):
     # Sample feed from:
     # https://developers.google.com/transit/gtfs/examples/gtfs-feed
     # https://developers.google.com/static/transit/gtfs/examples/sample-feed.zip
-    filepath = "data/sample-feed.zip"
+    filepath = data_dir / "sample-feed.zip"
     df_dict = gtfs_utils.load_gtfs(filepath, lazy=False)
 
     assert isinstance(df_dict, dict)
@@ -21,9 +21,9 @@ def test__load_sample_gtfs():
         assert isinstance(df_dict[key], pd.DataFrame)
 
 
-@pytest.fixture(params=["data/sample-feed.gtfs", "data/sample-feed.zip"])
-def sample_gtfs_path(request):
-    return request.param
+@pytest.fixture(params=["sample-feed.gtfs", "sample-feed.zip"])
+def sample_gtfs_path(data_dir, request):
+    return data_dir / request.param
 
 
 @pytest.fixture(params=[True, False])
