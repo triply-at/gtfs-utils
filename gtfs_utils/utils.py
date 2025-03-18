@@ -7,6 +7,7 @@ from zipfile import ZipFile
 import dask.dataframe as dd
 from pathlib import Path
 import pandas as pd
+from dask import is_dask_collection
 
 
 @dataclass
@@ -153,3 +154,16 @@ def load_gtfs(
         raise Exception(f"{p} is no directory or zipfile")
 
     return df_dict
+
+def compute_if_necessary(*args):
+    """
+    Computes the incoming args if necessary
+    :param args:
+    :return: args, if args are not a dask collection, otherwise the computed args
+    """
+    if args is None:
+        return args
+    if is_dask_collection(args[0]):
+        return dd.compute(*args)
+
+    return args

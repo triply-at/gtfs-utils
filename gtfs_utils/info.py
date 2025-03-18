@@ -8,23 +8,16 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .utils import load_gtfs, GtfsDict
+from .bounds import get_bounding_box
+from .cli_utils import SourceArgument
+from .utils import load_gtfs, GtfsDict, compute_if_necessary
 
 app = typer.Typer()
 
 
-@app.command()
+@app.command(help="Get information about a GTFS feed")
 def info(
-    src: Annotated[
-        Path,
-        typer.Argument(
-            exists=True,
-            file_okay=True,
-            dir_okay=True,
-            readable=True,
-            help="Path to GTFS directory or file",
-        ),
-    ],
+    src: SourceArgument,
     lazy: Annotated[bool, typer.Option(help="Use dask to load files")] = False,
 ):
     df_dict = load_gtfs(src, lazy=lazy)
@@ -61,6 +54,11 @@ class GtfsInfo:
 
 
 def get_info(src: Path | GtfsDict) -> GtfsInfo:
+    """
+    Get information about a GTFS feed.
+    :param src: Path to GTFS directory or zip file, or a dictionary of DataFrames
+    :return: a GtfsInfo object for the feed
+    """
     df_dict = load_gtfs(src) if isinstance(src, Path) else src
     date_range = get_calendar_date_range(src)
     file_size = {}
@@ -74,9 +72,6 @@ def get_info(src: Path | GtfsDict) -> GtfsInfo:
 def get_calendar_date_range(df_dict: GtfsDict) -> tuple[datetime, datetime]:
     if "calendar" in df_dict:
         calendar = df_dict["calendar"]
-
-        def compute_if_necessary(*args):
-            return dd.compute(*args) if isinstance(calendar, dd.DataFrame) else args
 
         min_date = min(
             compute_if_necessary(
@@ -96,13 +91,4 @@ def get_calendar_date_range(df_dict: GtfsDict) -> tuple[datetime, datetime]:
     return (
         datetime.strptime(str(min_date), "%Y%m%d"),
         datetime.strptime(str(max_date), "%Y%m%d"),
-    )
-
-
-def get_bounding_box(df_dict: GtfsDict) -> tuple[float, float, float, float]:
-    return (
-        df_dict["stops"]["stop_lon"].min(),
-        df_dict["stops"]["stop_lat"].min(),
-        df_dict["stops"]["stop_lon"].max(),
-        df_dict["stops"]["stop_lat"].max(),
     )

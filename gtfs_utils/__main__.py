@@ -5,10 +5,10 @@ import argparse
 from pathlib import Path
 import tempfile
 import shutil
-
+from typing import Annotated, Optional
 import typer
 
-import gtfs_utils.info
+from gtfs_utils import version, info, bounds
 from .utils import load_gtfs
 from .filter import filter_gtfs, remove_route_with_type
 from .analyze import analyze_route_type
@@ -135,7 +135,29 @@ def start_analyze(args):
 
 
 app = typer.Typer()
-app.add_typer(gtfs_utils.info.app)
+app.add_typer(info.app)
+app.add_typer(bounds.app)
+
+
+def version_callback(value: bool, ctx: typer.Context):
+    if value:
+        print(f"{__name__} {version.version}")
+        raise typer.Exit()
+
+
+@app.callback()
+def common(
+    version: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--version/",
+            help="Print version and exit",
+            callback=version_callback,
+            is_eager=True,
+        ),
+    ] = False,
+):
+    pass
 
 
 def main():

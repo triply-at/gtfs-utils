@@ -1,5 +1,8 @@
 # ruff: noqa: F401
-__version__ = "0.0.1"
+
+from . import version
+
+__version__ = version
 
 from .utils import load_gtfs
 from .utils import GtfsFile
