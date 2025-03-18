@@ -38,6 +38,7 @@ def cleanup_calendar(df_dict: GtfsDict, output_dir: Path):
         if "calendar" in df_dict:
             t = time.time()
             mask = df_dict["calendar"]["service_id"].isin(service_ids)
+
             df_dict["calendar"] = df_dict["calendar"][mask]
             df_dict.save_file("calendar", output_dir)
 
