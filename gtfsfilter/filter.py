@@ -5,10 +5,14 @@ from pathlib import Path
 import numpy as np
 import shapely
 import geopandas as gpd
+import pandas as pd
 
 
 def cleanup_stop_transfers(df_dict, output_dir: Path, all_stop_ids):
     t = time.time()
+    mask = df_dict["stops"]["stop_id"].isin(all_stop_ids)
+    stop_parent_ids = df_dict["stops"][mask]["parent_station"].unique().compute().tolist()
+    all_stop_ids = pd.array(all_stop_ids.tolist()+stop_parent_ids).unique()
     mask = df_dict["stops"]["stop_id"].isin(all_stop_ids)
     df_dict["stops"] = df_dict["stops"][mask]
     df_dict["stops"].to_csv(
@@ -89,6 +93,7 @@ def remove_route_with_type(df_dict, output, types):
 def filter_gtfs(df_dict, filter_geometry, output, shapes=False, complete_trips=False):
     output_dir = Path(output)
 
+    # prepare clip geometry
     if isinstance(filter_geometry, list):
         geom = shapely.geometry.box(*filter_geometry)
     elif isinstance(filter_geometry, shapely.geometry.base.BaseGeometry):
@@ -96,13 +101,15 @@ def filter_gtfs(df_dict, filter_geometry, output, shapes=False, complete_trips=F
     else:
         raise ValueError(f"filter_geometry type {type(filter_geometry)} not supported!")
 
+    # prepare stop geometries
     dic = df_dict["stops"][["stop_lon", "stop_lat", "stop_id"]].compute()
 
     gpd_data = gpd.GeoDataFrame(
         dic["stop_id"], geometry=gpd.points_from_xy(dic.stop_lon, dic.stop_lat)
     )
     del dic
-
+    
+    # clip stops
     t = time.time()
     mask = gpd_data.within(geom)
     gpd_data = gpd_data[mask]

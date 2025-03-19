@@ -10,6 +10,7 @@ from . import load_gtfs
 from .filter import filter_gtfs, remove_route_with_type
 from .analyze import analyze_route_type
 from .remove_shapes import remove_shapes
+from .format import prepare_calendar
 
 
 def cleanup(args, src_filepath, dst_filepath, temp_dst, skip_shapes=False):
@@ -117,6 +118,11 @@ def start_analyze(args):
 
     analyze_route_type(df_dict)
 
+def start_prepare_calendar(args):
+    src_filepath, dst_filepath, temp_dst = create_paths(args)
+    df_dict = load_gtfs_files(src_filepath, ['calendar', 'calendar_dates'], True)
+
+    prepare_calendar(df_dict, dst_filepath)
 
 def main():
     parser = argparse.ArgumentParser(description="GTFS Filter", formatter_class=argparse.RawTextHelpFormatter)
@@ -179,6 +185,11 @@ This option results in slower processing.""", )
 
     analyze = subparsers.add_parser('analyze', help="list which route types are in the dataset")
 
+    prepare_calendar_parser = subparsers.add_parser('prepare-calendar', help='prepare calendar for r5py')
+
+    prepare_calendar_parser.add_argument(nargs='?', default=None, dest="dst", help="Output filepath")
+    prepare_calendar_parser.add_argument("--overwrite", action="store_true", dest="overwrite", help="Overwrite if exists")
+
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
@@ -192,6 +203,8 @@ This option results in slower processing.""", )
         start_filter(args)
     elif args.utility == 'remove-shapes':
         start_remove_shapes(args)
+    elif args.utility == 'prepare-calendar':
+        start_prepare_calendar(args)
     else:
         parser.print_help()
 
