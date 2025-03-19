@@ -116,7 +116,7 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
 
     def filter(
         self,
-        file: str,
+        file: str | GtfsFile,
         where: Callable[[pd.DataFrame], pd.Series],
         return_cols: str | List[str] = None,
     ) -> pd.Series | pd.DataFrame:
@@ -128,7 +128,7 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
         return self[file][return_cols] if return_cols else None
 
     def bounds(self) -> tuple[float, float, float, float]:
-        from gtfs_utils.cli.bounds import get_bounding_box
+        from gtfs_utils.info import get_bounding_box
 
         return get_bounding_box(self)
 
