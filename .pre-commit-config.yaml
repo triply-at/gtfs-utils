@@ -10,4 +10,4 @@ repos:
     rev: 0.6.6
     hooks:
       - id: uv-export
-        args: [ "--no-hashes", "--format=requirements-txt", "--output-file=requirements.txt", "--no-emit-project" ]
+        args: [ "--no-dev", "--no-hashes", "--format=requirements-txt", "--output-file=requirements.txt", "--no-emit-project" ]
