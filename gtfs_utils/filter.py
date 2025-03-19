@@ -1,5 +1,5 @@
 import dataclasses
-from typing import List
+from typing import List, Dict, Callable
 
 import shapely
 import geopandas as gpd
@@ -48,9 +48,10 @@ class RouteTypeFilter:
 
 
 Filter = BoundsFilter
+FilterFunction = Callable[[GtfsDict, Filter], GtfsDict]
 
 
-def apply_bounds_filter(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
+def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
     if isinstance(filt.bounds, list):
         bounds = shapely.geometry.box(*filt.bounds)
     elif isinstance(filt.bounds, shapely.geometry.base.BaseGeometry):
@@ -113,9 +114,16 @@ def apply_bounds_filter(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
     return gtfs
 
 
+def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
+    pass
+
+
+_filters: Dict[str, FilterFunction] = {"bounds": filter_by_bounds, "route_type": None}
+
+
 def apply_filter(df_dict: GtfsDict, filt: Filter) -> GtfsDict:
     if filt.type == "bounds":
-        return apply_bounds_filter(df_dict, filt)
+        return filter_by_bounds(df_dict, filt)
     elif filt.type == "route_type":
         # todo route type filter
         raise NotImplementedError
@@ -134,7 +142,10 @@ def do_filter(df_dict: GtfsDict, filters: List[Filter]) -> GtfsDict:
     # todo: optionally we could do the orphan removal steps after all filters?
     # todo: fail fast on wrong filters
 
-    for filt in filters:
-        df_dict = apply_filter(df_dict, filt)
-
+    for f in filters:
+        if f.type in _filters:
+            filter_function = _filters[f.type]
+            df_dict = filter_function(df_dict, f)
+        else:
+            raise ValueError(f"Filter type {f.type} not supported!")
     return df_dict

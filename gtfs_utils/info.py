@@ -11,6 +11,7 @@ class GtfsInfo:
     bounding_box: tuple[float, float, float, float]
     file_size: dict[str, int]
     calendar_date_range: tuple[datetime, datetime]
+    route_type_counts: dict[int, int]
 
 
 def get_info(src: Path | GtfsDict) -> GtfsInfo:
@@ -25,11 +26,26 @@ def get_info(src: Path | GtfsDict) -> GtfsInfo:
     for file in df_dict:
         file_size[file] = len(df_dict[file])
     bounds = get_bounding_box(src)
+    route_type_counts = get_route_type_counts(src)
 
-    return GtfsInfo(bounds, file_size, date_range)
+    return GtfsInfo(bounds, file_size, date_range, route_type_counts)
 
 
-def get_calendar_date_range(df_dict: GtfsDict) -> tuple[datetime, datetime]:
+def get_route_types(src: Path | GtfsDict) -> list[int]:
+    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+
+    return compute_if_necessary(df_dict.routes()["route_type"].unique()).tolist()
+
+
+def get_route_type_counts(src: Path | GtfsDict) -> dict[int, int]:
+    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+
+    return compute_if_necessary(df_dict.routes()["route_type"].value_counts()).to_dict()
+
+
+def get_calendar_date_range(src: Path | GtfsDict) -> tuple[datetime, datetime]:
+    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+
     if "calendar" in df_dict:
         calendar = df_dict["calendar"]
 
@@ -54,7 +70,9 @@ def get_calendar_date_range(df_dict: GtfsDict) -> tuple[datetime, datetime]:
     )
 
 
-def get_bounding_box(df_dict: GtfsDict) -> tuple[float, float, float, float]:
+def get_bounding_box(src: Path | GtfsDict) -> tuple[float, float, float, float]:
+    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+
     stops = df_dict["stops"]
     return compute_if_necessary(
         stops["stop_lon"].min(),

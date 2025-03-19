@@ -193,6 +193,20 @@ DTYPES = {
     "platform_code": "string",
 }
 
+ROUTE_TYPES = {
+    0: "Tram, Streetcar, Light rail",
+    1: "Subway, Metro",
+    2: "Rail",
+    3: "Bus",
+    4: "Ferry",
+    5: "Cable car",
+    6: "Aerial lift, suspended cable car",
+    7: "Funicular",
+    11: "Trolleybus",
+    12: "Monorail",
+    # extended route types are currently not supported.
+}
+
 
 def load_gtfs(
     filepath: str | Path,
