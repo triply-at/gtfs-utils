@@ -37,17 +37,22 @@ from gtfs_utils.utils import GtfsDict, compute_if_necessary, Timer
 @dataclasses.dataclass
 class BoundsFilter:
     bounds: List[float] | shapely.geometry.base.BaseGeometry
+    """Bounding box or geometry to filter by"""
     complete_trips: bool
+    """Keep trips complete, even if some stops are outside bounds"""
     type = "bounds"
 
 
 @dataclasses.dataclass
 class RouteTypeFilter:
     route_types: List[int]
+    """Route types to filter by"""
+    negate: bool = False
+    """Negate the filter (removes given route types)"""
     type = "route_type"
 
 
-Filter = BoundsFilter
+Filter = BoundsFilter | RouteTypeFilter
 FilterFunction = Callable[[GtfsDict, Filter], GtfsDict]
 
 
@@ -115,28 +120,52 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
 
 
 def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
-    pass
+    routes = gtfs.filter(
+        "routes",
+        lambda df: ~df["route_type"].isin(filt.route_types)
+        if filt.negate
+        else df["route_type"].isin(filt.route_types),
+        ["route_id", "agency_id"],
+    )
+
+    with Timer("Removed (potential) orphans - %.2fs"):
+        route_ids = routes["route_id"]
+        agency_ids = routes["agency_id"]
+        gtfs.filter("agency", lambda df: df["agency_id"].isin(agency_ids))
+        trips = gtfs.filter(
+            "trips",
+            lambda df: df["route_id"].isin(route_ids),
+            ["service_id", "shape_id", "trip_id"],
+        )
+        gtfs.filter("calendar", lambda df: df["service_id"].isin(trips["service_id"]))
+        gtfs.filter(
+            "calendar_dates", lambda df: df["service_id"].isin(trips["service_id"])
+        )
+        gtfs.filter("shapes", lambda df: df["shape_id"].isin(trips["shape_id"]))
+        stop_ids = gtfs.filter(
+            "stop_times", lambda df: df["trip_id"].isin(trips["trip_id"]), "stop_id"
+        )
+        gtfs.filter("stops", lambda df: df["stop_id"].isin(stop_ids))
+        gtfs.filter(
+            "transfers",
+            lambda df: df["from_stop_id"].isin(stop_ids)
+            | df["to_stop_id"].isin(stop_ids),
+        )
+
+    return gtfs
 
 
-_filters: Dict[str, FilterFunction] = {"bounds": filter_by_bounds, "route_type": None}
-
-
-def apply_filter(df_dict: GtfsDict, filt: Filter) -> GtfsDict:
-    if filt.type == "bounds":
-        return filter_by_bounds(df_dict, filt)
-    elif filt.type == "route_type":
-        # todo route type filter
-        raise NotImplementedError
-        # return apply_route_type_filter(df_dict, filt)
-    else:
-        raise ValueError(f"Filter type {filt.type} not supported!")
+_filters: Dict[str, FilterFunction] = {
+    "bounds": filter_by_bounds,
+    "route_type": filter_by_route_type,
+}
 
 
 def do_filter(df_dict: GtfsDict, filters: List[Filter]) -> GtfsDict:
     """
-    Filter the gtfs feed based on the filters provided
+    Filter the gtfs feed based on the filters provided. Careful - this overwrites data in the  input GtfsDict!
     :param df_dict: gtfs feed to filter
-    :param filters:
+    :param filters: list of filters to apply
     :return:
     """
     # todo: optionally we could do the orphan removal steps after all filters?

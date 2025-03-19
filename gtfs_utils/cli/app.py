@@ -5,13 +5,12 @@ import typer
 from rich.console import Console
 
 from gtfs_utils import __version__, load_gtfs, GtfsFile, get_bounding_box
-from gtfs_utils.cli import filter, bounds, info
+from gtfs_utils.cli import filter, info
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
 from gtfs_utils.info import get_route_type_counts
 
 app = typer.Typer()
 app.add_typer(info.app)
-app.add_typer(bounds.app)
 app.add_typer(filter.app)
 
 

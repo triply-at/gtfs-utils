@@ -5,7 +5,7 @@ import typer
 
 from gtfs_utils import load_gtfs
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
-from gtfs_utils.filter import do_filter, BoundsFilter
+from gtfs_utils.filter import do_filter, BoundsFilter, RouteTypeFilter
 from gtfs_utils.utils import Timer, OPTIONAL_FILE_NAMES
 
 app = typer.Typer()
@@ -63,9 +63,25 @@ def filter_app(
             help="Keep trips complete, even if some stops are outside bounds",
         ),
     ] = True,
+    filter_route_types: Annotated[
+        Optional[str],
+        typer.Option(
+            "--filter-route-types",
+            help="Route types to filter by, e.g. `0,1,2`. All routes with a different type will be removed. ",
+        ),
+    ] = None,
+    exclude_route_types: Annotated[
+        Optional[str],
+        typer.Option(
+            "--remove-route-types", help="Route types to remove, e.g. `0,1,2`"
+        ),
+    ] = None,
     lazy: LazyOption = False,
 ):
-    df_dict = load_gtfs(src, lazy=lazy, subset=OPTIONAL_FILE_NAMES)
+    if filter_route_types is not None and exclude_route_types is not None:
+        raise ValueError(
+            'Cannot use both "--filter-route-types" and "--remove-route-types"'
+        )
 
     filters = []
     if bounds is not None:
@@ -75,9 +91,26 @@ def filter_app(
                 complete_trips=complete_trips,
             )
         )
+    if filter_route_types is not None:
+        route_types = list(map(int, filter_route_types.split(",")))
+        filters.append(
+            RouteTypeFilter(
+                route_types=route_types,
+                negate=False,
+            )
+        )
+    if exclude_route_types is not None:
+        route_types = list(map(int, exclude_route_types.split(",")))
+        filters.append(
+            RouteTypeFilter(
+                route_types=route_types,
+                negate=True,
+            )
+        )
+
+    df_dict = load_gtfs(src, lazy=lazy, subset=OPTIONAL_FILE_NAMES)
 
     with Timer("Finished filtering in %.2f seconds"):
         filtered = do_filter(df_dict, filters)
-    # filter_gtfs(df_dict, bounds.bounds, temp_dir, True, complete_trips=complete_trips)
     filtered.save(output_dir=output)
     print(f'Wrote output to "{output}"')

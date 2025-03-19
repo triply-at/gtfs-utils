@@ -119,13 +119,24 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
         file: str | GtfsFile,
         where: Callable[[pd.DataFrame], pd.Series],
         return_cols: str | List[str] = None,
-    ) -> pd.Series | pd.DataFrame:
+    ) -> pd.Series | pd.DataFrame | None:
+        """
+        Filter a file in the GTFS feed by a where condition.
+        All data not matching the condition will be removed from the file.
+
+        If the file does not exist, an empty DataFrame is returned.
+
+        :param file: the feed to filter
+        :param where: condition to filter by - should return a boolean series of the same size as the incoming Dataframe
+        :param return_cols: columns of the filtered data to return. If no columns are given, `None` is returned
+        :return: the filtered data or None
+        """
         if not self.__contains__(file):
             return pd.DataFrame(columns=return_cols) if return_cols else None
 
         mask = where(self[file])
         self[file] = self[file][mask]  # noqa
-        return self[file][return_cols] if return_cols else None
+        return compute_if_necessary(self[file][return_cols]) if return_cols else None
 
     def bounds(self) -> tuple[float, float, float, float]:
         from gtfs_utils.info import get_bounding_box
