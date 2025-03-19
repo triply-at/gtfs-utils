@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 import gtfs_utils
+from gtfs_utils.utils import GtfsDict
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -14,9 +15,9 @@ def test__load_sample_gtfs(data_dir):
     # https://developers.google.com/transit/gtfs/examples/gtfs-feed
     # https://developers.google.com/static/transit/gtfs/examples/sample-feed.zip
     filepath = data_dir / "sample-feed.zip"
-    df_dict = gtfs_utils.load_gtfs(filepath, lazy=False)
+    df_dict = GtfsDict.load(filepath, lazy=False)
 
-    assert isinstance(df_dict, dict)
+    assert isinstance(df_dict, GtfsDict)
     for key in df_dict:
         assert isinstance(df_dict[key], pd.DataFrame)
 
@@ -24,11 +25,6 @@ def test__load_sample_gtfs(data_dir):
 @pytest.fixture(params=["sample-feed.gtfs", "sample-feed.zip"])
 def sample_gtfs_path(data_dir, request):
     return data_dir / request.param
-
-
-@pytest.fixture(params=[True, False])
-def lazy(request):
-    return request.param
 
 
 @pytest.fixture

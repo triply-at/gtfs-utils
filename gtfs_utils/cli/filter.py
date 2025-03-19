@@ -1,15 +1,12 @@
-import logging
-import shutil
-import tempfile
 from pathlib import Path
 from typing import Annotated, Optional, List
 
 import typer
 
 from gtfs_utils import load_gtfs
-from gtfs_utils.cli_utils import SourceArgument, LazyOption
+from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
 from gtfs_utils.filter import do_filter, BoundsFilter
-from gtfs_utils.utils import OPTIONAL_FILES, Timer
+from gtfs_utils.utils import Timer, OPTIONAL_FILE_NAMES
 
 app = typer.Typer()
 
@@ -37,7 +34,7 @@ def parse_bounds(bounds: str) -> Bounds:
 
 
 @app.command(help="Filter a GTFS feed", name="filter")
-def filter_function(
+def filter_app(
     src: SourceArgument,
     output: Annotated[
         Path,
@@ -55,7 +52,7 @@ def filter_function(
         typer.Option(
             "--bounds",
             "-b",
-            help="Bounding box to filter by. In the format of `[minLat, minLon, maxLat, maxLon]`",
+            help="Bounding box to filter by. In the format of `[minLon, minLat, maxLon, maxLat]`",
             parser=parse_bounds,
         ),
     ] = None,
@@ -68,8 +65,7 @@ def filter_function(
     ] = True,
     lazy: LazyOption = False,
 ):
-    df_dict = load_gtfs(src, lazy=lazy, subset=OPTIONAL_FILES)
-    temp_dir = Path(tempfile.mkdtemp())
+    df_dict = load_gtfs(src, lazy=lazy, subset=OPTIONAL_FILE_NAMES)
 
     filters = []
     if bounds is not None:
@@ -81,16 +77,7 @@ def filter_function(
         )
 
     with Timer("Finished filtering in %.2f seconds"):
-        do_filter(df_dict, filters)
+        filtered = do_filter(df_dict, filters)
     # filter_gtfs(df_dict, bounds.bounds, temp_dir, True, complete_trips=complete_trips)
-    logging.debug(f'Wrote file to temp directory "{temp_dir}"')
-
-    # copy tempdir to output
-    if output.exists() or output.suffix == ".zip":
-        raise NotImplementedError(
-            "Output file exists or is a zip file - currently not yet supported"
-        )
-
-    shutil.copytree(temp_dir, output)
-
+    filtered.save(output_dir=output)
     print(f'Wrote output to "{output}"')

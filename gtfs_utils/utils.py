@@ -2,7 +2,7 @@ import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar, Mapping, Callable, List
+from typing import TypeVar, Mapping, Callable, List, Literal
 from zipfile import ZipFile
 
 import dask.dataframe as dd
@@ -35,6 +35,10 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
 
+    @classmethod
+    def load(cls, *args, **kwargs) -> "GtfsDict":
+        return load_gtfs(*args, **kwargs)
+
     def save_file(self, file: str, output_dir: Path) -> None:
         if file not in self:
             raise KeyError(f"{file} not found in GTFS data")
@@ -45,6 +49,37 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
             else {"index": False}
         )
         self[file].to_csv(output_dir / f"{file}.txt", **save_kwargs)
+
+    def save(self, output_dir: Path) -> None:
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True)
+        for file in self:
+            self.save_file(file, output_dir)
+
+    def stop_gdf(self, additional_columns: List[str] | Literal["all"] | None = None):
+        """
+        Returns a GeoDataFrame of stops
+        :param additional_columns: additional columns to include in the GeoDataFrame, per default only ID is included
+        :return:
+        """
+        import geopandas as gpd
+
+        df: pd.DataFrame = self.stops()
+
+        if additional_columns is None:
+            df = df[["stop_lon", "stop_lat", "stop_id"]]
+        elif additional_columns == "all":
+            # no further filtering - all columns
+            pass
+        elif isinstance(additional_columns, list):
+            df = df[["stop_lon", "stop_lat"] + additional_columns]
+
+        df = compute_if_necessary(df)
+        return gpd.GeoDataFrame(
+            df.drop(columns=["stop_lon", "stop_lat"], axis=0),
+            geometry=gpd.points_from_xy(df.stop_lon, df.stop_lat),
+            crs="EPSG:4326",
+        )
 
     def agency(self) -> pd.DataFrame | dd.DataFrame:
         return self[GtfsFile.AGENCY.file]
@@ -92,9 +127,15 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
         self[file] = self[file][mask]  # noqa
         return self[file][return_cols] if return_cols else None
 
+    def bounds(self) -> tuple[float, float, float, float]:
+        from gtfs_utils.cli.bounds import get_bounding_box
 
-REQUIRED_FILES = [f for f in GtfsFile if f.required]
-OPTIONAL_FILES = [f for f in GtfsFile if not f.required]
+        return get_bounding_box(self)
+
+
+REQUIRED_FILES: List[GtfsFile] = [f for f in GtfsFile if f.required]
+OPTIONAL_FILES: List[GtfsFile] = [f for f in GtfsFile if not f.required]
+OPTIONAL_FILE_NAMES: List[str] = [f.file for f in OPTIONAL_FILES]
 
 # https://developers.google.com/transit/gtfs/reference
 DTYPES = {

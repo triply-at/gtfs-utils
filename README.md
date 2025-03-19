@@ -54,3 +54,9 @@ unzip latest.gtfs.zip -d latest.gtfs
 gtfsfilter  latest.gtfs  extract --bounds="[7.4588,46.9844,11.6545,48.932]" --complete-trips cut.gtfs
 zip -j cut.gtfs.zip cut.gtfs/*.txt
 ```
+
+## Tests
+
+### Data used
+
+For testing purposes, GTFS data from Vienna's transit agency is used. [`GTFS Transport Schedules Vienna`]([https://data.gv.at/](https://www.data.gv.at/katalog/dataset/ab4a73b6-1c2d-42e1-b4d9-049e04889cf0)) by `Wiener Linien GmbH & Co KG` are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

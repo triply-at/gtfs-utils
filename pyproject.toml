@@ -1,6 +1,6 @@
 [project]
 name = "gtfs-utils"
-version = "3.6.0"
+version = "0.2.0"
 description = "Utility library for working with gtfs files"
 readme = "README.md"
 authors = [
@@ -26,6 +26,13 @@ Repository = "https://github.com/triply-at/gtfsfilter.git"
 [project.scripts]
 gtfs-utils = "gtfs_utils.__main__:main"
 
+[project.optional-dependencies]
+maps = [
+    "folium>=0.19.5",
+    "mapclassify>=2.8.1",
+    "matplotlib>=3.10.1",
+]
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
@@ -39,3 +46,4 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = "slow: marks tests as slow (deselect with '-m \"not slow\"')"

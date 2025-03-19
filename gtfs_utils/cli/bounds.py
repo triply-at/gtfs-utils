@@ -1,9 +1,9 @@
 import typer
 from rich.console import Console
 
-from . import GtfsFile
-from .cli_utils import SourceArgument, LazyOption
-from .utils import load_gtfs, GtfsDict, compute_if_necessary
+from gtfs_utils import GtfsFile, get_bounding_box
+from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
+from gtfs_utils.utils import load_gtfs
 
 app = typer.Typer()
 
@@ -19,13 +19,3 @@ def bounds(
     console = Console()
     console.print("Bounding Box:\t", style="bold", end="")
     console.print(str(list(bbox)))
-
-
-def get_bounding_box(df_dict: GtfsDict) -> tuple[float, float, float, float]:
-    stops = df_dict["stops"]
-    return compute_if_necessary(
-        stops["stop_lon"].min(),
-        stops["stop_lat"].min(),
-        stops["stop_lon"].max(),
-        stops["stop_lat"].max(),
-    )
