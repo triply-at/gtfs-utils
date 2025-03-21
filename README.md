@@ -25,9 +25,14 @@ gtfs-utils filter data -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienn
 
 ## Installation
 
-[//]: # (TODO later: Add instructions for installing from PyPi)
 ```bash
-pip install git+https://github.com/triply-at/gtfsfilter.git
+pip install gtfs-utils
+```
+
+With [uv](https://docs.astral.sh/uv) you can also directly run the latest version of the tool without installing it:
+
+```bash
+uvx gtfs-utils filter data -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienna-filtered
 ```
 
 ## Usage
@@ -138,11 +143,26 @@ Currently supported filters:
 
 Run `gtfs-utils filter --help` for all options.
 
-## Development
+## Development Setup
 
-:construction: **Work in progress** - This section is in progress :construction:
+In order to get started developing, please follow the steps below:
+
+- Clone the repository `git clone https://github.com/triply-at/gtfs-utils` and cd into the directory
+- [Install uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already
+- Install the pre-commit hooks by running `uv run pre-commit install`
+
+The commit hooks should automatically fail on any lint and formatting errors (checked through `ruff`).
+You can also run the checks manually by running `uv run ruff check --fix` and `uv run ruff format`.
+
+If you want to run the tests, you can do so by running `uv run pytest`.
+By default, most tests are executed with both eager and lazy loading. 
+To speed up local tests, you can run only the eager tests with  `uv run pytest -m 'not slow'`.
 
 
+## Bugs
+
+Please report any bugs that you encounter on the [issue tracker](https://github.com/triply-at/gtfs-utils/issues).
+If you can, feel free to create a pull request to solve the issue. We welcome any contributions.
 
 ## License 
 
@@ -154,6 +174,6 @@ Chris Stelzmüller <c.stelzmueller@triply.at>
 Luis Nachtigall <l.nachtigall@triply.at>
 ```
 
-### Data used
+### Testing Data
 
 For testing purposes, GTFS data from Vienna's transit agency is used. [`GTFS Transport Schedules Vienna`]([https://data.gv.at/](https://www.data.gv.at/katalog/dataset/ab4a73b6-1c2d-42e1-b4d9-049e04889cf0)) by `Wiener Linien GmbH & Co KG` are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

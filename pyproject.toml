@@ -1,6 +1,6 @@
 [project]
 name = "gtfs-utils"
-version = "0.2.0"
+version = "0.1.0"
 description = "Utility library for working with gtfs files"
 readme = "README.md"
 authors = [
@@ -12,16 +12,23 @@ dependencies = [
     "bottleneck>=1.4.2",
     "dask[complete]>=2025.2.0",
     "geopandas>=1.0.1",
-    "numexpr>=2.10.2",
     "numpy>=2.2.4",
     "pandas>=2.2.3",
     "rich>=13.9.4",
     "shapely>=2.0.7",
     "typer>=0.15.2",
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+
+]
 
 [project.urls]
-Repository = "https://github.com/triply-at/gtfsfilter.git"
+Repository = "https://github.com/triply-at/gtfs-utils.git"
+Issues = "https://github.com/triply-at/gtfs-utils/issues"
+
 
 [project.scripts]
 gtfs-utils = "gtfs_utils.__main__:main"
