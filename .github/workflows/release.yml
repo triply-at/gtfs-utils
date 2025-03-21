@@ -10,43 +10,43 @@ env:
 
 jobs:
   # Push image to GitHub Packages.
-  push_docker_image:
-    runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        name: [$IMAGE_NAME]
-        include:
-          - name: $IMAGE_NAME
-            context: .
-            file: ./Dockerfile
-            
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: Log into registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Build ${{ matrix.name }}
-        run:  docker build ${{ matrix.context }} --file ${{ matrix.file }} --tag ${{ matrix.name }}
-
-      - name: Push ${{ matrix.name }}
-        run: |
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
-          # Change all uppercase to lowercase
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          docker tag ${{ matrix.name }} $IMAGE_ID:$VERSION
-          docker tag ${{ matrix.name }} $IMAGE_ID:latest
-          docker push $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:latest
+#  push_docker_image:
+#    runs-on: ubuntu-latest
+#
+#    strategy:
+#      matrix:
+#        name: [$IMAGE_NAME]
+#        include:
+#          - name: $IMAGE_NAME
+#            context: .
+#            file: ./Dockerfile
+#
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - name: Log into registry
+#        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+#
+#      - name: Build ${{ matrix.name }}
+#        run:  docker build ${{ matrix.context }} --file ${{ matrix.file }} --tag ${{ matrix.name }}
+#
+#      - name: Push ${{ matrix.name }}
+#        run: |
+#          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+#          # Change all uppercase to lowercase
+#          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+#          # Strip git ref prefix from version
+#          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+#          # Strip "v" prefix from tag name
+#          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+#          # Use Docker `latest` tag convention
+#          [ "$VERSION" == "master" ] && VERSION=latest
+#          echo IMAGE_ID=$IMAGE_ID
+#          echo VERSION=$VERSION
+#          docker tag ${{ matrix.name }} $IMAGE_ID:$VERSION
+#          docker tag ${{ matrix.name }} $IMAGE_ID:latest
+#          docker push $IMAGE_ID:$VERSION
+#          docker push $IMAGE_ID:latest
 
 
 
