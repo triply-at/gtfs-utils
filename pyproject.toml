@@ -21,8 +21,6 @@ dependencies = [
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
-    "License :: OSI Approved :: MIT License",
-
 ]
 
 [project.urls]
@@ -55,3 +53,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+
+[tool.setuptools.packages.find]
+include = ["gtfs_utils", "gtfs_utils.*"]

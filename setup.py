@@ -16,7 +16,6 @@ except FileNotFoundError:
     requirements = []
 
 setup(
-    packages=["gtfs_utils"],
     install_requires=requirements,
     entry_points={"console_scripts": ["gtfs-utils = gtfs_utils.__main__:main"]},
 )
