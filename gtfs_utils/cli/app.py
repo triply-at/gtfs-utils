@@ -64,10 +64,19 @@ def bounds(
 def route_types(
     src: SourceArgument,
     lazy: LazyOption = False,
+    _list: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--list/", help="Show a list of included route types instead of counts"
+        ),
+    ] = False,
 ):
     df_dict = load_gtfs(src, lazy=lazy, subset=[GtfsFile.ROUTES.file], only_subset=True)
     route_counts = get_route_type_counts(df_dict)
 
     console = Console()
     console.print("Route Types:\t", style="bold", end="")
-    console.print(str(route_counts))
+    if list:
+        console.print(str(sorted(route_counts.keys())))
+    else:
+        console.print(str(route_counts))
