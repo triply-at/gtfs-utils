@@ -6,7 +6,7 @@ import pytest
 
 import gtfs_utils
 from gtfs_utils.filter import RouteTypeFilter
-from gtfs_utils.utils import GtfsDict, ROUTE_TYPES
+from gtfs_utils.utils import GtfsDict, ROUTE_TYPES, compute_if_necessary
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -56,7 +56,7 @@ def test__filter_by_type_3(sample_data, lazy):
     filtered = gtfs_utils.do_filter(gtfs, [RouteTypeFilter(route_types=[3])])
 
     assert isinstance(filtered, GtfsDict)
-    existing_routes = filtered.routes()["route_id"].unique()
+    existing_routes = compute_if_necessary(filtered.routes()["route_id"].unique())
     assert len(existing_routes) == 4
     assert "AB" not in existing_routes
     assert len(gtfs.agency()) == 1
