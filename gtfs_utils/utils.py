@@ -50,7 +50,8 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
         )
         self[file].to_csv(output_dir / f"{file}.txt", **save_kwargs)
 
-    def save(self, output_dir: Path) -> None:
+    def save(self, output_dir: Path | str) -> None:
+        output_dir = Path(output_dir)
         if not output_dir.exists():
             output_dir.mkdir(parents=True)
         for file in self:

@@ -25,7 +25,7 @@ def info(
     console.print()
 
     console.print("Bounding Box:\t", style="bold", end="")
-    console.print(str(gtfs_info.bounding_box))
+    console.print(str(list(gtfs_info.bounding_box)))
 
     console.print("Calendar date range:\t", style="bold", end="")
     console.print(f"{min_date.strftime('%d.%m.%Y')} - {max_date.strftime('%d.%m.%Y')}")
@@ -41,12 +41,11 @@ def info(
     console.print()
     table = Table(title="Route Types", style="bold")
     table.add_column("Route Type", justify="center")
+    table.add_column("Route Type ID", justify="center")
     table.add_column("# Routes", justify="right")
     for type_int, count in gtfs_info.route_type_counts.items():
         route_type_str = (
-            ROUTE_TYPES[type_int]
-            if type_int in ROUTE_TYPES
-            else f"Unknown ({type_int})"
+            ROUTE_TYPES[type_int] if type_int in ROUTE_TYPES else "Unknown Type"
         )
-        table.add_row(route_type_str, f"{count:_} routes")
+        table.add_row(route_type_str, str(type_int), f"{count:_} routes")
     console.print(table)
