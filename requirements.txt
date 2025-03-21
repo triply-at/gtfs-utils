@@ -16,6 +16,7 @@ numpy==2.2.4
 packaging==24.2
 pandas==2.2.3
 partd==1.4.2
+pyarrow==19.0.1
 pygments==2.19.1
 pyogrio==0.10.0
 pyproj==3.7.1
