@@ -1,6 +1,7 @@
 import dataclasses
 from typing import List, Dict, Callable
 
+import pandas as pd
 import shapely
 import geopandas as gpd
 
@@ -86,13 +87,24 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
 
         trip_ids = compute_if_necessary(stop_times[stop_times_mask]["trip_id"].unique())
         if filt.complete_trips:
-            # use bigger mask to keep all stop times related to a trip if at lease one stop is in bounds
+            # use bigger mask to keep all stop times related to a trip if at least one stop is in bounds
             stop_times_mask = stop_times["trip_id"].isin(trip_ids)
 
         stop_times = stop_times[stop_times_mask]
         all_stop_ids = compute_if_necessary(stop_times["stop_id"].unique())
-        all_trip_ids = compute_if_necessary(stop_times["trip_id"].unique())
-        gtfs["stop_times"] = stop_times
+
+        stops = gtfs["stops"]
+        if "parent_station" in gtfs["stops"]:
+            # find parents of selected stops
+            stops = stops[stops["stop_id"].isin(all_stop_ids)]
+            parent_stops = compute_if_necessary(
+                stops["parent_station"].dropna().unique()
+            )
+            all_stop_ids = pd.array(all_stop_ids, parent_stops)
+
+        all_trip_ids = gtfs.filter(
+            "stop_times", lambda df: df["stop_id"].isin(all_stop_ids), "trip_id"
+        )
         gtfs.filter("stops", lambda df: df["stop_id"].isin(all_stop_ids))
 
     with Timer("Removed (potential) orphans - %.2fs"):
