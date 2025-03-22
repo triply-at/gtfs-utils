@@ -11,9 +11,7 @@ import gtfs_utils
 from gtfs_utils.filter import BoundsFilter
 
 gtfs = gtfs_utils.load_gtfs('vienna.zip', lazy=False)
-filtered_gtfs = gtfs_utils.do_filter(
-    gtfs, [BoundsFilter(bounds=[16.2, 47.95, 16.35, 48.1], complete_trips=True)]
-)
+filtered_gtfs = gtfs_utils.filter_gtfs(gtfs, [BoundsFilter(bounds=[16.2, 47.95, 16.35, 48.1], complete_trips=True)])
 filtered_gtfs.save('vienna_filtered')
 ```
 

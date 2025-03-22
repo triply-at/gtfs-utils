@@ -21,7 +21,7 @@ def test__filter_with_all_route_types(sample_data, lazy):
 
     file_sizes = {key: len(gtfs[key]) for key in gtfs}
 
-    filtered = gtfs_utils.do_filter(
+    filtered = gtfs_utils.filter_gtfs(
         gtfs, [RouteTypeFilter(route_types=list(ROUTE_TYPES.keys()))]
     )
 
@@ -34,7 +34,7 @@ def test__filter_with_all_route_types(sample_data, lazy):
 def test__filter_with_all_route_types_negated(sample_data, lazy):
     gtfs = gtfs_utils.load_gtfs(sample_data, lazy=lazy)
 
-    filtered = gtfs_utils.do_filter(
+    filtered = gtfs_utils.filter_gtfs(
         gtfs, [RouteTypeFilter(route_types=ROUTE_TYPES.keys(), negate=True)]
     )
 
@@ -53,7 +53,7 @@ def test__filter_by_type_3(sample_data, lazy):
             gtfs[key], dd.DataFrame
         )
 
-    filtered = gtfs_utils.do_filter(gtfs, [RouteTypeFilter(route_types=[3])])
+    filtered = gtfs_utils.filter_gtfs(gtfs, [RouteTypeFilter(route_types=[3])])
 
     assert isinstance(filtered, GtfsDict)
     existing_routes = compute_if_necessary(filtered.routes()["route_id"].unique())

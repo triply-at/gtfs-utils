@@ -137,7 +137,18 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
 
         mask = where(self[file])
         self[file] = self[file][mask]  # noqa
-        return compute_if_necessary(self[file][return_cols]) if return_cols else None
+        if return_cols is None:
+            return None
+
+        if isinstance(return_cols, str):
+            if return_cols not in self[file].columns:
+                return pd.Series()
+
+            return compute_if_necessary(self[file][return_cols])
+
+        existing_cols = list(set(return_cols) & set(self[file].columns))
+
+        return compute_if_necessary(self[file][existing_cols])
 
     def bounds(self) -> tuple[float, float, float, float]:
         from gtfs_utils.info import get_bounding_box
@@ -304,7 +315,7 @@ ROUTE_TYPES = {
 def load_gtfs(
     filepath: str | Path,
     subset: None | list[str] = None,
-    lazy=True,
+    lazy=False,
     only_subset=False,
 ) -> GtfsDict:
     """

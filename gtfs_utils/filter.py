@@ -161,7 +161,7 @@ _filters: Dict[str, FilterFunction] = {
 }
 
 
-def do_filter(df_dict: GtfsDict, filters: List[Filter]) -> GtfsDict:
+def filter_gtfs(df_dict: GtfsDict, filters: List[Filter]) -> GtfsDict:
     """
     Filter the gtfs feed based on the filters provided. Careful - this overwrites data in the  input GtfsDict!
     :param df_dict: gtfs feed to filter

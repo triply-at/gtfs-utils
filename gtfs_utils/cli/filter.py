@@ -5,7 +5,7 @@ import typer
 
 from gtfs_utils import load_gtfs
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
-from gtfs_utils.filter import do_filter, BoundsFilter, RouteTypeFilter
+from gtfs_utils.filter import filter_gtfs, BoundsFilter, RouteTypeFilter
 from gtfs_utils.utils import Timer, OPTIONAL_FILE_NAMES
 
 app = typer.Typer()
@@ -111,6 +111,6 @@ def filter_app(
     df_dict = load_gtfs(src, lazy=lazy, subset=OPTIONAL_FILE_NAMES)
 
     with Timer("Finished filtering in %.2f seconds"):
-        filtered = do_filter(df_dict, filters)
+        filtered = filter_gtfs(df_dict, filters)
     filtered.save(output_dir=output)
     print(f'Wrote output to "{output}"')

@@ -36,7 +36,7 @@ def test__filter_with_empty_bounds(vienna_data_path, lazy):
         )
 
     bounds = [0, 0, 0, 0]
-    filtered = gtfs_utils.do_filter(
+    filtered = gtfs_utils.filter_gtfs(
         gtfs, [BoundsFilter(bounds=bounds, complete_trips=True)]
     )
 
@@ -55,7 +55,7 @@ def test__filter_bounds_vienna(
 ):
     gtfs = gtfs_utils.load_gtfs(vienna_data_path, lazy=lazy)
 
-    filtered = gtfs_utils.do_filter(
+    filtered = gtfs_utils.filter_gtfs(
         gtfs, [BoundsFilter(bounds=vienna_south_bounds, complete_trips=complete_trips)]
     )
 
@@ -74,7 +74,7 @@ def test__filter_by_own_bounds(vienna_data_path, lazy):
     file_sizes = {key: len(gtfs[key]) for key in gtfs}
     bounds = gtfs.bounds()
 
-    filtered = gtfs_utils.do_filter(
+    filtered = gtfs_utils.filter_gtfs(
         gtfs, [BoundsFilter(bounds=list(bounds), complete_trips=False)]
     )
 
