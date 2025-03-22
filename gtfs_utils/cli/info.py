@@ -2,7 +2,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from gtfs_utils import load_gtfs, get_info
+from gtfs_utils import get_info, load_gtfs_delayed
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
 from gtfs_utils.utils import ROUTE_TYPES
 
@@ -14,7 +14,7 @@ def info(
     src: SourceArgument,
     lazy: LazyOption = False,
 ):
-    df_dict = load_gtfs(src, lazy=lazy)
+    df_dict = load_gtfs_delayed(src, lazy=lazy)
     gtfs_info = get_info(df_dict)
     min_date, max_date = gtfs_info.calendar_date_range
 

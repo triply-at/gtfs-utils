@@ -1,10 +1,11 @@
 import logging
 import shutil
 import time
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import IO, Callable, List, Literal, Mapping, TypeVar
+from typing import IO, Callable, List, Literal, TypeVar
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import dask.dataframe as dd
@@ -32,9 +33,28 @@ class GtfsFile(GtfsFileMixin, Enum):
     TRANSFERS = "transfers", False
 
 
-class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
+class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
+        self.store = {}
+        self.update(dict(*args, **kwargs))
+
+    def __getitem__(self, key, /):
+        return self.store[key]
+
+    def __setitem__(self, key, value, /):
+        self.store[key] = value
+
+    def __delitem__(self, key, /):
+        del self.store[key]
+
+    def __iter__(self):
+        return iter(self.store)
+
+    def __len__(self):
+        return len(self.store)
+
+    def __contains__(self, item):
+        return item in self.store
 
     @classmethod
     def load(cls, *args, **kwargs) -> "GtfsDict":
@@ -55,7 +75,9 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
             raise KeyError(f"{file} not found in GTFS data")
         df = self[file]
 
-        if file is str or isinstance(file, Path):
+        if isinstance(file, str) and (
+            isinstance(output, Path) or isinstance(output, str)
+        ):
             output = Path(output) / f"{file}.txt"
 
         save_kwargs = (
@@ -189,6 +211,46 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
         from gtfs_utils.info import get_bounding_box
 
         return get_bounding_box(self)
+
+
+class DelayedGtfsDict(GtfsDict):
+    def __init__(
+        self, base_file: Path, existing_files: dict[str, str], lazy: bool = False
+    ) -> None:
+        super().__init__()
+        self.base_file = base_file
+        self.existing_files = existing_files
+        self.lazy = lazy
+
+    def __iter__(self):
+        for key in self.existing_files:
+            _ = self[key]
+            yield key
+
+    def __getitem__(self, item):
+        if super().__contains__(item):
+            return super().__getitem__(item)
+
+        if item not in self.existing_files.keys():
+            raise KeyError(f"{item} not found in GTFS data")
+
+        file = self.read_file(item)
+        super().__setitem__(item, file)
+        return file
+
+    def __contains__(self, item):
+        return super().__contains__(item) or item in self.existing_files.keys()
+
+    def read_file(self, item: str) -> pd.DataFrame | dd.DataFrame:
+        if self.base_file.is_dir():
+            file_path = self.existing_files[item]
+            return _read_from_folder(file_path, self.lazy)
+
+        else:
+            with ZipFile(self.base_file) as zip_file:
+                return _read_from_zipped(
+                    self.existing_files[item], self.lazy, self.base_file, zip_file
+                )
 
 
 REQUIRED_FILES: List[GtfsFile] = [f for f in GtfsFile if f.required]
@@ -363,15 +425,15 @@ def load_gtfs(
     :param only_subset: Only load files in subset
     :return: a dict of gtfs file names to Dataframes.
     """
+    default_files = [f.file for f in REQUIRED_FILES + OPTIONAL_FILES]
+
     if subset is None:
         subset = []
 
     df_dict = GtfsDict()
     p: Path = Path(filepath)
 
-    files_to_read = (
-        subset if only_subset else (subset + [file.file for file in REQUIRED_FILES])
-    )
+    files_to_read = subset if only_subset else (subset + default_files)
 
     if not p.exists():
         raise Exception(f"{p} Does not exist")
@@ -381,55 +443,86 @@ def load_gtfs(
             if file_name.is_file():
                 file_key = file_name.stem
                 if file_key in files_to_read:
-                    logging.debug(f"Reading {file_key}")
-                    sample_df = pd.read_csv(file_name, nrows=2)
-
-                    for col in sample_df.columns:
-                        if col not in DTYPES:
-                            logging.warning(col + " not in dtypes - using type string")
-                            DTYPES[col] = "string"
-
-                    df_dict[file_key] = (dd if lazy else pd).read_csv(
-                        file_name,
-                        low_memory=False,
-                        dtype=DTYPES,
-                    )
+                    df_dict[file_key] = _read_from_folder(file_name, lazy)
 
     elif p.suffix == ".zip":
         with ZipFile(filepath) as zip_file:
             for file_name in zip_file.namelist():
                 file_key = Path(file_name).stem
                 if file_key in files_to_read:
-                    logging.debug(f"Reading {file_key}")
-                    with zip_file.open(file_name) as file:
-                        sample_df = pd.read_csv(file, encoding="utf8", nrows=2)
-
-                        for col in sample_df.columns:
-                            if col not in DTYPES:
-                                logging.warning(
-                                    col + " not in dtypes - using type string"
-                                )
-                                DTYPES[col] = "string"
-                    if lazy:
-                        df_dict[file_key] = dd.read_csv(
-                            f"zip://{file_name}",
-                            encoding="utf8",
-                            low_memory=False,
-                            dtype=DTYPES,
-                            storage_options={"fo": p},
-                        )
-                    else:
-                        with zip_file.open(file_name) as file:
-                            df_dict[file_key] = pd.read_csv(
-                                file,
-                                encoding="utf8",
-                                low_memory=False,
-                                dtype=DTYPES,
-                            )
+                    df_dict[file_key] = _read_from_zipped(file_name, lazy, p, zip_file)
     else:
         raise Exception(f"{p} is no directory or zipfile")
 
     return df_dict
+
+
+def _read_from_folder(file_name, lazy) -> pd.DataFrame | dd.DataFrame:
+    logging.debug(f"Reading {file_name}")
+    sample_df = pd.read_csv(file_name, nrows=2)
+    for col in sample_df.columns:
+        if col not in DTYPES:
+            logging.warning(col + " not in dtypes - using type string")
+            DTYPES[col] = "string"
+    return (dd if lazy else pd).read_csv(
+        file_name,
+        low_memory=False,
+        dtype=DTYPES,
+    )
+
+
+def _read_from_zipped(file_name, lazy, p, zip_file) -> pd.DataFrame | dd.DataFrame:
+    logging.debug(f"Reading {file_name}")
+    with zip_file.open(file_name) as file:
+        sample_df = pd.read_csv(file, encoding="utf8", nrows=2)
+
+        for col in sample_df.columns:
+            if col not in DTYPES:
+                logging.warning(col + " not in dtypes - using type string")
+                DTYPES[col] = "string"
+    if lazy:
+        return dd.read_csv(
+            f"zip://{file_name}",
+            encoding="utf8",
+            low_memory=False,
+            dtype=DTYPES,
+            storage_options={"fo": p},
+        )
+    else:
+        with zip_file.open(file_name) as file:
+            return pd.read_csv(
+                file,
+                encoding="utf8",
+                low_memory=False,
+                dtype=DTYPES,
+            )
+
+
+def load_gtfs_delayed(
+    filepath: str | Path,
+    lazy: bool = False,
+) -> DelayedGtfsDict:
+    p: Path = Path(filepath)
+
+    if not p.exists():
+        raise Exception(f"{p} Does not exist")
+
+    existing_files = {}
+    if p.is_dir():
+        existing_files = {
+            file_name.stem: file_name
+            for file_name in p.iterdir()
+            if file_name.is_file()
+        }
+    elif p.suffix == ".zip":
+        with ZipFile(filepath) as zip_file:
+            existing_files = {
+                Path(file_name).stem: file_name for file_name in zip_file.namelist()
+            }
+    else:
+        raise Exception(f"{p} is no directory or zipfile")
+
+    return DelayedGtfsDict(existing_files=existing_files, base_file=p, lazy=lazy)
 
 
 T = TypeVar("T")

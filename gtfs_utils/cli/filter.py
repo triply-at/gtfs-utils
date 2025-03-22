@@ -3,10 +3,10 @@ from typing import Annotated, Optional, List
 
 import typer
 
-from gtfs_utils import load_gtfs
+from gtfs_utils import load_gtfs_delayed
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
 from gtfs_utils.filter import filter_gtfs, BoundsFilter, RouteTypeFilter
-from gtfs_utils.utils import Timer, OPTIONAL_FILE_NAMES
+from gtfs_utils.utils import Timer
 
 app = typer.Typer()
 
@@ -116,7 +116,7 @@ def filter_app(
             )
         )
 
-    df_dict = load_gtfs(src, lazy=lazy, subset=OPTIONAL_FILE_NAMES)
+    df_dict = load_gtfs_delayed(src, lazy=lazy)
 
     with Timer("Finished filtering in %.2f seconds"):
         filtered = filter_gtfs(df_dict, filters)

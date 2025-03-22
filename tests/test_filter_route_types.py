@@ -41,7 +41,7 @@ def test__filter_with_all_route_types_negated(sample_data, lazy):
     assert isinstance(filtered, GtfsDict)
 
     for key in filtered:
-        assert len(gtfs[key]) == 0, "every df should be empty"
+        assert len(gtfs[key]) == 0, f"df should be empty - ({key})"
 
 
 def test__filter_by_type_3(sample_data, lazy):
