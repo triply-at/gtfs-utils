@@ -115,6 +115,7 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
             "routes", lambda df: df["route_id"].isin(trips["route_id"]), "agency_id"
         )
         gtfs.filter("agency", lambda df: df["agency_id"].isin(agency_ids))
+        gtfs.filter("frequencies", lambda df: df["trip_id"].isin(all_trip_ids))
 
     return gtfs
 
@@ -151,6 +152,7 @@ def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
             lambda df: df["from_stop_id"].isin(stop_ids)
             | df["to_stop_id"].isin(stop_ids),
         )
+        gtfs.filter("frequencies", lambda df: df["trip_id"].isin(trips["trip_id"]))
 
     return gtfs
 
