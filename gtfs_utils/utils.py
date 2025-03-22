@@ -1,12 +1,13 @@
 import logging
+import shutil
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar, Mapping, Callable, List, Literal
-from zipfile import ZipFile
+from pathlib import Path
+from typing import IO, Callable, List, Literal, Mapping, TypeVar
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import dask.dataframe as dd
-from pathlib import Path
 import pandas as pd
 from dask import is_dask_collection
 
@@ -39,23 +40,57 @@ class GtfsDict(dict, Mapping[str, pd.DataFrame | dd.DataFrame]):
     def load(cls, *args, **kwargs) -> "GtfsDict":
         return load_gtfs(*args, **kwargs)
 
-    def save_file(self, file: str, output_dir: Path) -> None:
+    def save_file(
+        self,
+        file: str,
+        output: Path | str | IO,
+    ) -> None:
+        """
+        Save a file to the output directory
+        :param file: the gtfs file to save
+        :param output: path to gtfs folder to store data in or a buffer to write the data into.
+        :return:
+        """
         if file not in self:
             raise KeyError(f"{file} not found in GTFS data")
         df = self[file]
+
+        if file is str or isinstance(file, Path):
+            output = Path(output) / f"{file}.txt"
+
         save_kwargs = (
             {"single_file": True, "index": False}
             if is_dask_collection(df)
             else {"index": False}
         )
-        self[file].to_csv(output_dir / f"{file}.txt", **save_kwargs)
+        df.to_csv(output, **save_kwargs)
 
-    def save(self, output_dir: Path | str) -> None:
-        output_dir = Path(output_dir)
-        if not output_dir.exists():
-            output_dir.mkdir(parents=True)
-        for file in self:
-            self.save_file(file, output_dir)
+    def save(self, output_dir_or_file: Path | str, overwrite=False) -> None:
+        output = Path(output_dir_or_file)
+
+        if output.exists():
+            if overwrite:
+                logging.warning(f"{output} already exists but will be deleted.")
+                if output.is_file():
+                    output.unlink()
+                else:
+                    shutil.rmtree(output)
+            else:
+                raise FileExistsError(
+                    f"{output} already exists. Use overwrite=True / `-f` to overwrite the file."
+                )
+
+        if output.suffix == ".zip":
+            with ZipFile(output, "w", compression=ZIP_DEFLATED) as zip_file:
+                for file in self:
+                    with zip_file.open(f"{file}.txt", "w") as f:
+                        self.save_file(file, f)
+
+        else:
+            if not output.exists():
+                output.mkdir(parents=True)
+            for file in self:
+                self.save_file(file, output)
 
     def stop_gdf(self, additional_columns: List[str] | Literal["all"] | None = None):
         """
@@ -227,7 +262,8 @@ ROUTE_TYPES = {
     7: "Funicular",
     11: "Trolleybus",
     12: "Monorail",
-    # extended route types - see https://developers.google.com/transit/gtfs/reference/extended-route-types for more details
+    # extended route types -
+    # see https://developers.google.com/transit/gtfs/reference/extended-route-types for more details
     # 00: 'Railway Service',
     101: "High Speed Rail Service",
     102: "Long Distance Trains",

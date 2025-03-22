@@ -128,8 +128,8 @@ Run `gtfs-utils info --help` for more options.
 Filters a gtfs feed by a set of filters.
 
 ```shell
-gtfs-utils filter vienna.zip -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienna-filtered
-> Wrote output to "vienna-filtered"
+gtfs-utils filter vienna.zip -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienna-filtered.zip
+> Wrote output to "vienna-filtered.zip"
 ```
 
 Requires a `---output/-o` option to specify the output directory or file.

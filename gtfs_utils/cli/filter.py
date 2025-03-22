@@ -77,6 +77,14 @@ def filter_app(
         ),
     ] = None,
     lazy: LazyOption = False,
+    overwrite: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--overwrite",
+            "-f",
+            help="Overwrite output directory if it exists",
+        ),
+    ] = False,
 ):
     if filter_route_types is not None and exclude_route_types is not None:
         raise ValueError(
@@ -112,5 +120,5 @@ def filter_app(
 
     with Timer("Finished filtering in %.2f seconds"):
         filtered = filter_gtfs(df_dict, filters)
-    filtered.save(output_dir=output)
+    filtered.save(output_dir_or_file=output, overwrite=overwrite)
     print(f'Wrote output to "{output}"')
