@@ -403,8 +403,8 @@ wheels = [
 ]
 
 [[package]]
-name = "gtfs-utils"
-version = "0.2.0"
+name = "gtfsutils"
+version = "0.2.1"
 source = { editable = "." }
 dependencies = [
     { name = "dask", extra = ["dataframe"] },
