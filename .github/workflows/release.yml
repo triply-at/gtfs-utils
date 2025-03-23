@@ -52,6 +52,11 @@ jobs:
 
   release_pypi_package:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    environment:
+      name: pypi
+      url: https://pypi.org/p/gtfsutils
     steps:
       - uses: actions/checkout@v4
 

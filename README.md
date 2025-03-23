@@ -24,13 +24,13 @@ gtfs-utils filter data -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienn
 ## Installation
 
 ```bash
-pip install gtfs-utils
+pip install gtfsutils
 ```
 
 With [uv](https://docs.astral.sh/uv) you can also directly run the latest version of the tool without installing it:
 
 ```bash
-uvx gtfs-utils filter data -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienna-filtered
+uvx gtfsutils filter data -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienna-filtered
 ```
 
 ## Usage
