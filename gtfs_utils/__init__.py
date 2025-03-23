@@ -2,7 +2,7 @@
 
 import importlib.metadata
 
-__version__ = importlib.metadata.version(__name__)
+__version__ = importlib.metadata.version("gtfsutils")
 
 from .utils import load_gtfs, load_gtfs_delayed
 from .utils import GtfsFile, DelayedGtfsDict
