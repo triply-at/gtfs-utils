@@ -15,11 +15,18 @@ filtered_gtfs = gtfs_utils.filter_gtfs(gtfs, [BoundsFilter(bounds=[16.2, 47.95, 
 filtered_gtfs.save('vienna_filtered')
 ```
 
-or 
+or as a command-line tool:
 
 ```shell
-gtfs-utils filter data -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienna-filtered
+gtfs-utils filter vienna.zip -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o vienna-filtered.zip
 ```
+
+or via docker
+
+```shell
+docker run -t -v "${PWD}:/data" ghcr.io/triply-at/gtfs-utils gtfs-utils filter /data/vienna.zip -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o /data/vienna-filtered.zip
+```
+
 
 ## Installation
 
