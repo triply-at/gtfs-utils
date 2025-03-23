@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 from typing import List, Dict, Callable
 
 import pandas as pd
@@ -6,33 +7,6 @@ import shapely
 import geopandas as gpd
 
 from gtfs_utils.utils import GtfsDict, compute_if_necessary, Timer
-
-# def remove_route_with_type(df_dict, output, types):
-#     output_dir = Path(output)
-#
-#     mask = df_dict["routes"]["route_type"].isin(types)
-#     unique_route_ids = df_dict["routes"][mask]["route_id"].unique().compute()
-#     df_dict["routes"] = df_dict["routes"][~mask]
-#     df_dict["routes"].to_csv(output_dir / "routes.txt", single_file=True, index=False)
-#
-#     mask = df_dict["trips"]["route_id"].isin(unique_route_ids)
-#     unique_trip_ids = df_dict["trips"][mask]["trip_id"].unique().compute()
-#     df_dict["trips"] = df_dict["trips"][~mask]
-#     df_dict["trips"].to_csv(output_dir / "trips.txt", single_file=True, index=False)
-#
-#     del unique_route_ids
-#
-#     mask = df_dict["stop_times"]["trip_id"].isin(unique_trip_ids)
-#     df_dict["stop_times"] = df_dict["stop_times"][~mask]
-#     all_stop_ids = df_dict["stop_times"]["stop_id"].unique().compute()
-#     df_dict["stop_times"].to_csv(
-#         output_dir / "stop_times.txt", single_file=True, index=False
-#     )
-#
-#     cleanup_stop_transfers(df_dict, output_dir, all_stop_ids)
-#     del all_stop_ids
-#
-#     cleanup_calendar(df_dict, output_dir)
 
 
 @dataclasses.dataclass
@@ -100,7 +74,7 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
             parent_stops = compute_if_necessary(
                 stops["parent_station"].dropna().unique()
             )
-            all_stop_ids = pd.array(all_stop_ids, parent_stops)
+            all_stop_ids = pd.array(all_stop_ids.tolist() + parent_stops.tolist())
 
         all_trip_ids = gtfs.filter(
             "stop_times", lambda df: df["stop_id"].isin(all_stop_ids), "trip_id"
@@ -128,8 +102,41 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
         )
         gtfs.filter("agency", lambda df: df["agency_id"].isin(agency_ids))
         gtfs.filter("frequencies", lambda df: df["trip_id"].isin(all_trip_ids))
+        fix_calendar_problems(gtfs)
 
     return gtfs
+
+
+def fix_calendar_problems(df_dict: GtfsDict):
+    if "calendar" in df_dict and "calendar_dates" in df_dict:
+        calendar = compute_if_necessary(df_dict["calendar"])
+        service_ids = calendar["service_id"].unique()
+
+        mask = (~df_dict["calendar_dates"]["service_id"].isin(service_ids)) & (
+            df_dict["calendar_dates"]["exception_type"] == 1
+        )
+
+        missing_calendar_date_values = df_dict["calendar_dates"][mask].groupby(
+            "service_id"
+        )
+        for i, service_group in missing_calendar_date_values:
+            records = [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                service_group.date.min(),
+                service_group.date.max(),
+                i,
+            ]
+            for j, service in service_group.iterrows():
+                day = datetime.datetime.strptime(str(service.date), "%Y%m%d").weekday()
+                records[day] = 1
+            calendar.loc[len(calendar)] = records
+        df_dict["calendar"] = calendar
 
 
 def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
@@ -165,6 +172,7 @@ def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
             | df["to_stop_id"].isin(stop_ids),
         )
         gtfs.filter("frequencies", lambda df: df["trip_id"].isin(trips["trip_id"]))
+        fix_calendar_problems(gtfs)
 
     return gtfs
 
