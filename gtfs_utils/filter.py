@@ -111,14 +111,14 @@ def fix_calendar_problems(df_dict: GtfsDict):
     if "calendar" in df_dict and "calendar_dates" in df_dict:
         calendar = compute_if_necessary(df_dict["calendar"])
         service_ids = calendar["service_id"].unique()
+        calendar_dates = compute_if_necessary(df_dict["calendar_dates"])
 
-        mask = (~df_dict["calendar_dates"]["service_id"].isin(service_ids)) & (
-            df_dict["calendar_dates"]["exception_type"] == 1
+        mask = compute_if_necessary(~calendar_dates["service_id"].isin(service_ids)) & (
+            calendar_dates["exception_type"] == 1
         )
 
-        missing_calendar_date_values = df_dict["calendar_dates"][mask].groupby(
-            "service_id"
-        )
+        missing_calendar_date_values = calendar_dates[mask].groupby("service_id")
+
         for i, service_group in missing_calendar_date_values:
             records = [
                 0,
