@@ -1,0 +1,57 @@
+[project]
+name = "gtfs-utils"
+version = "0.2.0"
+description = "Utility library for working with gtfs files"
+readme = "README.md"
+authors = [
+    { name = "Luis Nachtigall", email = "l.nachtigall@triply.at" },
+    { name = "Chris Stelzmüller", email = "c.stelzmueller@triply.at" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "dask[dataframe]>=2025.2.0",
+    "geopandas>=1.0.1",
+    "numpy>=2.2.4",
+    "pandas>=2.2.3",
+    "rich>=13.9.4",
+    "shapely>=2.0.7",
+    "typer>=0.15.2",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Repository = "https://github.com/triply-at/gtfs-utils.git"
+Issues = "https://github.com/triply-at/gtfs-utils/issues"
+
+
+[project.scripts]
+gtfs-utils = "gtfs_utils.__main__:main"
+
+[project.optional-dependencies]
+maps = [
+    "folium>=0.19.5",
+    "mapclassify>=2.8.1",
+    "matplotlib>=3.10.1",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.1.0",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.11.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+
+[tool.setuptools.packages.find]
+include = ["gtfs_utils", "gtfs_utils.*"]

@@ -1,22 +1,41 @@
-FROM osgeo/gdal:alpine-small-latest
+# An example of using standalone Python builds with multistage images.
+# First, build the application in the `/app` directory
+FROM ghcr.io/astral-sh/uv:bookworm-slim AS builder
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-ENV TZ="Europe/Berlin"
+# Configure the Python directory so it is consistent
+ENV UV_PYTHON_INSTALL_DIR=/python
 
-RUN apk update && apk upgrade
-# Build deps
-RUN apk add --update --no-cache --virtual .build-deps g++ libc-dev linux-headers musl musl-dev make geos-dev
-RUN apk add --no-cache jpeg-dev zlib-dev libjpeg 
-RUN apk add --no-cache libffi-dev openssl-dev curl python3-dev py3-pip
+# Only use the managed Python version
+ENV UV_PYTHON_PREFERENCE=only-managed
 
-RUN pip3 install -U pip
-RUN pip3 install wheel
+# Install Python before the project for caching
+RUN uv python install 3.10
 
-WORKDIR /install
+WORKDIR /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
+ADD . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
-COPY . .
+# Then, use a final image without uv
+FROM debian:bookworm-slim
+LABEL authors="tuesd4y,lelunz"
+LABEL org.opencontainers.image.source=https://github.com/triply-at/gtfs-utils
+LABEL org.opencontainers.image.description="Utility library for reading and filtering gtfs files that can handle large datasets"
+LABEL org.opencontainers.image.licenses=MIT
 
-# PYTHONUSERBASE
-RUN pip3 install --prefix="/install" .
+# Copy the Python version
+COPY --from=builder --chown=python:python /python /python
 
-ENV AM_I_IN_A_DOCKER_CONTAINER Yes
-RUN apk del .build-deps
+# Copy the application from the builder
+COPY --from=builder --chown=app:app /app /app
+
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Run help command per default
+CMD ["gtfs-utils", "--help"]
