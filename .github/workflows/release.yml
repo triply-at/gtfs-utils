@@ -1,4 +1,4 @@
-name: Docker
+name: Build docker image and release to pypi
 
 on:
   release:
