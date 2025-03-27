@@ -4,7 +4,11 @@ from typing import Annotated, Optional
 import typer
 from rich.console import Console
 
-from gtfs_utils import __version__, load_gtfs, GtfsFile, get_bounding_box
+from gtfs_utils import (
+    __version__,
+    get_bounding_box,
+    load_gtfs_delayed,
+)
 from gtfs_utils.cli import filter, info
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
 from gtfs_utils.info import get_route_type_counts
@@ -52,7 +56,7 @@ def bounds(
     src: SourceArgument,
     lazy: LazyOption = False,
 ):
-    df_dict = load_gtfs(src, lazy=lazy, subset=[GtfsFile.STOPS.file], only_subset=True)
+    df_dict = load_gtfs_delayed(src, lazy=lazy)
     bbox = get_bounding_box(df_dict)
 
     console = Console()
@@ -71,7 +75,7 @@ def route_types(
         ),
     ] = False,
 ):
-    df_dict = load_gtfs(src, lazy=lazy, subset=[GtfsFile.ROUTES.file], only_subset=True)
+    df_dict = load_gtfs_delayed(src, lazy=lazy)
     route_counts = get_route_type_counts(df_dict)
 
     console = Console()

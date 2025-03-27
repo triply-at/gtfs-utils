@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from .utils import load_gtfs, GtfsDict, compute_if_necessary
+from . import load_gtfs_delayed
+from .utils import GtfsDict, compute_if_necessary
 
 
 @dataclass
@@ -20,7 +21,7 @@ def get_info(src: Path | GtfsDict) -> GtfsInfo:
     :param src: Path to GTFS directory or zip file, or a dictionary of DataFrames
     :return: a GtfsInfo object for the feed
     """
-    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+    df_dict = load_gtfs_delayed(src) if isinstance(src, Path) else src
     date_range = get_calendar_date_range(src)
     file_size = {}
     for file in df_dict:
@@ -32,19 +33,19 @@ def get_info(src: Path | GtfsDict) -> GtfsInfo:
 
 
 def get_route_types(src: Path | GtfsDict) -> list[int]:
-    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+    df_dict = load_gtfs_delayed(src) if isinstance(src, Path) else src
 
     return compute_if_necessary(df_dict.routes()["route_type"].unique()).tolist()
 
 
 def get_route_type_counts(src: Path | GtfsDict) -> dict[int, int]:
-    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+    df_dict = load_gtfs_delayed(src) if isinstance(src, Path) else src
 
     return compute_if_necessary(df_dict.routes()["route_type"].value_counts()).to_dict()
 
 
 def get_calendar_date_range(src: Path | GtfsDict) -> tuple[datetime, datetime]:
-    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+    df_dict = load_gtfs_delayed(src) if isinstance(src, Path) else src
 
     if "calendar" in df_dict:
         calendar = df_dict["calendar"]
@@ -71,7 +72,7 @@ def get_calendar_date_range(src: Path | GtfsDict) -> tuple[datetime, datetime]:
 
 
 def get_bounding_box(src: Path | GtfsDict) -> tuple[float, float, float, float]:
-    df_dict = load_gtfs(src) if isinstance(src, Path) else src
+    df_dict = load_gtfs_delayed(src) if isinstance(src, Path) else src
 
     stops = df_dict["stops"]
     return compute_if_necessary(

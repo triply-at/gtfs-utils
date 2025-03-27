@@ -79,7 +79,9 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
         all_trip_ids = gtfs.filter(
             "stop_times", lambda df: df["stop_id"].isin(all_stop_ids), "trip_id"
         )
-        gtfs.filter("stops", lambda df: df["stop_id"].isin(all_stop_ids))
+        stops = gtfs.filter(
+            "stops", lambda df: df["stop_id"].isin(all_stop_ids), ["zone_id"]
+        )
 
     with Timer("Removed (potential) orphans - %.2fs"):
         trips = gtfs.filter(
@@ -97,6 +99,14 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
         gtfs.filter(
             "calendar_dates", lambda df: df["service_id"].isin(trips["service_id"])
         )
+        fare_ids = gtfs.filter(
+            "fare_rules",
+            lambda df: df["route_id"].isin(trips["route_id"])
+            | df["contains_id"].isin(stops["zone_id"])
+            | df["origin_id"].isin(stops["zone_id"]),
+            "fare_id",
+        )
+        gtfs.filter("fare_attributes", lambda df: df["fare_id"].isin(fare_ids))
         agency_ids = gtfs.filter(
             "routes", lambda df: df["route_id"].isin(trips["route_id"]), "agency_id"
         )
@@ -165,13 +175,23 @@ def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
         stop_ids = gtfs.filter(
             "stop_times", lambda df: df["trip_id"].isin(trips["trip_id"]), "stop_id"
         )
-        gtfs.filter("stops", lambda df: df["stop_id"].isin(stop_ids))
+        stops = gtfs.filter(
+            "stops", lambda df: df["stop_id"].isin(stop_ids), ["zone_id"]
+        )
         gtfs.filter(
             "transfers",
             lambda df: df["from_stop_id"].isin(stop_ids)
             | df["to_stop_id"].isin(stop_ids),
         )
         gtfs.filter("frequencies", lambda df: df["trip_id"].isin(trips["trip_id"]))
+        fare_ids = gtfs.filter(
+            "fare_rules",
+            lambda df: df["route_id"].isin(route_ids)
+            | df["contains_id"].isin(stops["zone_id"])
+            | df["origin_id"].isin(stops["zone_id"]),
+            "fare_id",
+        )
+        gtfs.filter("fare_attributes", lambda df: df["fare_id"].isin(fare_ids))
         fix_calendar_problems(gtfs)
 
     return gtfs

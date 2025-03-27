@@ -11,6 +11,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import dask.dataframe as dd
 import pandas as pd
 from dask import is_dask_collection
+from typing_extensions import deprecated
 
 
 @dataclass
@@ -58,7 +59,7 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
 
     @classmethod
     def load(cls, *args, **kwargs) -> "GtfsDict":
-        return load_gtfs(*args, **kwargs)
+        return load_gtfs_delayed(*args, **kwargs)
 
     def save_file(
         self,
@@ -190,7 +191,12 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
         :return: the filtered data or None
         """
         if not self.__contains__(file):
-            return pd.DataFrame(columns=return_cols) if return_cols else None
+            if return_cols is None:
+                return None
+            if isinstance(return_cols, str):
+                return pd.Series()
+            else:
+                return pd.DataFrame(columns=return_cols)
 
         mask = where(self[file])
         self[file] = self[file][mask]  # noqa
@@ -410,6 +416,7 @@ ROUTE_TYPES = {
 }
 
 
+@deprecated("Use load_gtfs_delayed if possible")
 def load_gtfs(
     filepath: str | Path,
     subset: None | list[str] = None,
@@ -471,10 +478,20 @@ def _read_from_folder(file_name, lazy) -> pd.DataFrame | dd.DataFrame:
     )
 
 
-def _read_from_zipped(file_name, lazy, p, zip_file) -> pd.DataFrame | dd.DataFrame:
+def _read_from_zipped(
+    file_name, lazy, p, zip_file: ZipFile
+) -> pd.DataFrame | dd.DataFrame:
+    """
+    Read a file from a zipped GTFS feed
+    :param file_name: name of the file to load (e.g. agency.txt)
+    :param lazy: if dask should be used for loading
+    :param p: path to the zip file
+    :param zip_file: the actual (opened) zip file, or None when using lazy
+    :return:
+    """
     logging.debug(f"Reading {file_name}")
     with zip_file.open(file_name) as file:
-        sample_df = pd.read_csv(file, encoding="utf8", nrows=2)
+        sample_df = pd.read_csv(file, engine="python", nrows=2)
 
         for col in sample_df.columns:
             if col not in DTYPES:
@@ -483,7 +500,7 @@ def _read_from_zipped(file_name, lazy, p, zip_file) -> pd.DataFrame | dd.DataFra
     if lazy:
         return dd.read_csv(
             f"zip://{file_name}",
-            encoding="utf8",
+            encoding="utf-8",
             low_memory=False,
             dtype=DTYPES,
             storage_options={"fo": p},
@@ -507,17 +524,20 @@ def load_gtfs_delayed(
     if not p.exists():
         raise Exception(f"{p} Does not exist")
 
-    existing_files = {}
     if p.is_dir():
         existing_files = {
             file_name.stem: file_name
             for file_name in p.iterdir()
             if file_name.is_file()
+            and file_name.suffix in [".txt", ".csv"]
+            and file_name
         }
     elif p.suffix == ".zip":
         with ZipFile(filepath) as zip_file:
             existing_files = {
-                Path(file_name).stem: file_name for file_name in zip_file.namelist()
+                Path(file_name).stem: file_name
+                for file_name in zip_file.namelist()
+                if Path(file_name).suffix in [".txt", ".csv"] and "/" not in file_name
             }
     else:
         raise Exception(f"{p} is no directory or zipfile")
