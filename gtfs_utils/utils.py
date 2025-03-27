@@ -11,6 +11,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import dask.dataframe as dd
 import pandas as pd
 from dask import is_dask_collection
+from typing_extensions import deprecated
 
 
 @dataclass
@@ -58,7 +59,7 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
 
     @classmethod
     def load(cls, *args, **kwargs) -> "GtfsDict":
-        return load_gtfs(*args, **kwargs)
+        return load_gtfs_delayed(*args, **kwargs)
 
     def save_file(
         self,
@@ -101,6 +102,8 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
                 raise FileExistsError(
                     f"{output} already exists. Use overwrite=True / `-f` to overwrite the file."
                 )
+
+            print(self.keys())
 
         if output.suffix == ".zip":
             with ZipFile(output, "w", compression=ZIP_DEFLATED) as zip_file:
@@ -223,6 +226,7 @@ class DelayedGtfsDict(GtfsDict):
         self.lazy = lazy
 
     def __iter__(self):
+        print(self.existing_files)
         for key in self.existing_files:
             _ = self[key]
             yield key
@@ -247,10 +251,15 @@ class DelayedGtfsDict(GtfsDict):
             return _read_from_folder(file_path, self.lazy)
 
         else:
-            with ZipFile(self.base_file) as zip_file:
+            if self.lazy:
                 return _read_from_zipped(
-                    self.existing_files[item], self.lazy, self.base_file, zip_file
+                    self.existing_files[item], self.lazy, self.base_file, None
                 )
+            else:
+                with ZipFile(self.base_file) as zip_file:
+                    return _read_from_zipped(
+                        self.existing_files[item], self.lazy, self.base_file, zip_file
+                    )
 
 
 REQUIRED_FILES: List[GtfsFile] = [f for f in GtfsFile if f.required]
@@ -410,6 +419,7 @@ ROUTE_TYPES = {
 }
 
 
+@deprecated("Use load_gtfs_delayed if possible")
 def load_gtfs(
     filepath: str | Path,
     subset: None | list[str] = None,
@@ -471,10 +481,20 @@ def _read_from_folder(file_name, lazy) -> pd.DataFrame | dd.DataFrame:
     )
 
 
-def _read_from_zipped(file_name, lazy, p, zip_file) -> pd.DataFrame | dd.DataFrame:
+def _read_from_zipped(
+    file_name, lazy, p, zip_file: ZipFile | None
+) -> pd.DataFrame | dd.DataFrame:
+    """
+    Read a file from a zipped GTFS feed
+    :param file_name: name of the file to load (e.g. agency.txt)
+    :param lazy: if dask should be used for loading
+    :param p: path to the zip file
+    :param zip_file: the actual (opened) zip file, or None when using lazy
+    :return:
+    """
     logging.debug(f"Reading {file_name}")
     with zip_file.open(file_name) as file:
-        sample_df = pd.read_csv(file, encoding="utf8", nrows=2)
+        sample_df = pd.read_csv(file, engine="python", nrows=2)
 
         for col in sample_df.columns:
             if col not in DTYPES:
@@ -483,7 +503,7 @@ def _read_from_zipped(file_name, lazy, p, zip_file) -> pd.DataFrame | dd.DataFra
     if lazy:
         return dd.read_csv(
             f"zip://{file_name}",
-            encoding="utf8",
+            encoding="utf-8",
             low_memory=False,
             dtype=DTYPES,
             storage_options={"fo": p},
@@ -507,17 +527,20 @@ def load_gtfs_delayed(
     if not p.exists():
         raise Exception(f"{p} Does not exist")
 
-    existing_files = {}
     if p.is_dir():
         existing_files = {
             file_name.stem: file_name
             for file_name in p.iterdir()
             if file_name.is_file()
+            and file_name.suffix in [".txt", ".csv"]
+            and file_name
         }
     elif p.suffix == ".zip":
         with ZipFile(filepath) as zip_file:
             existing_files = {
-                Path(file_name).stem: file_name for file_name in zip_file.namelist()
+                Path(file_name).stem: file_name
+                for file_name in zip_file.namelist()
+                if Path(file_name).suffix in [".txt", ".csv"] and "/" not in file_name
             }
     else:
         raise Exception(f"{p} is no directory or zipfile")
