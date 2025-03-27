@@ -103,8 +103,6 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
                     f"{output} already exists. Use overwrite=True / `-f` to overwrite the file."
                 )
 
-            print(self.keys())
-
         if output.suffix == ".zip":
             with ZipFile(output, "w", compression=ZIP_DEFLATED) as zip_file:
                 for file in self:
@@ -193,7 +191,12 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
         :return: the filtered data or None
         """
         if not self.__contains__(file):
-            return pd.DataFrame(columns=return_cols) if return_cols else None
+            if return_cols is None:
+                return None
+            if isinstance(return_cols, str):
+                return pd.Series()
+            else:
+                return pd.DataFrame(columns=return_cols)
 
         mask = where(self[file])
         self[file] = self[file][mask]  # noqa
@@ -226,7 +229,6 @@ class DelayedGtfsDict(GtfsDict):
         self.lazy = lazy
 
     def __iter__(self):
-        print(self.existing_files)
         for key in self.existing_files:
             _ = self[key]
             yield key
@@ -251,15 +253,10 @@ class DelayedGtfsDict(GtfsDict):
             return _read_from_folder(file_path, self.lazy)
 
         else:
-            if self.lazy:
+            with ZipFile(self.base_file) as zip_file:
                 return _read_from_zipped(
-                    self.existing_files[item], self.lazy, self.base_file, None
+                    self.existing_files[item], self.lazy, self.base_file, zip_file
                 )
-            else:
-                with ZipFile(self.base_file) as zip_file:
-                    return _read_from_zipped(
-                        self.existing_files[item], self.lazy, self.base_file, zip_file
-                    )
 
 
 REQUIRED_FILES: List[GtfsFile] = [f for f in GtfsFile if f.required]
@@ -482,7 +479,7 @@ def _read_from_folder(file_name, lazy) -> pd.DataFrame | dd.DataFrame:
 
 
 def _read_from_zipped(
-    file_name, lazy, p, zip_file: ZipFile | None
+    file_name, lazy, p, zip_file: ZipFile
 ) -> pd.DataFrame | dd.DataFrame:
     """
     Read a file from a zipped GTFS feed
