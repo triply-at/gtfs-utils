@@ -27,7 +27,7 @@ def vienna_data_path(data_dir):
 
 
 def test__filter_with_empty_bounds(vienna_data_path, lazy):
-    gtfs = gtfs_utils.load_gtfs(vienna_data_path, lazy=lazy)
+    gtfs = gtfs_utils.load_gtfs_delayed(vienna_data_path, lazy=lazy)
 
     assert isinstance(gtfs, GtfsDict)
     for key in gtfs:
@@ -53,7 +53,7 @@ def test__filter_bounds_vienna(
     complete_trips,
     expected_stops,
 ):
-    gtfs = gtfs_utils.load_gtfs(vienna_data_path, lazy=lazy)
+    gtfs = gtfs_utils.load_gtfs_delayed(vienna_data_path, lazy=lazy)
 
     filtered = gtfs_utils.filter_gtfs(
         gtfs, [BoundsFilter(bounds=vienna_south_bounds, complete_trips=complete_trips)]
@@ -70,7 +70,7 @@ def test__filter_by_own_bounds(vienna_data_path, lazy):
     """
     Filtering a gtfs feed by its own bounds -> Should return the same feed
     """
-    gtfs = gtfs_utils.load_gtfs(vienna_data_path, lazy=lazy)
+    gtfs = gtfs_utils.load_gtfs_delayed(vienna_data_path, lazy=lazy)
     file_sizes = {key: len(gtfs[key]) for key in gtfs}
     bounds = gtfs.bounds()
 

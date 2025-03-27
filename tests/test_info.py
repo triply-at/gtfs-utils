@@ -29,7 +29,7 @@ def sample_gtfs_path(data_dir, request):
 
 @pytest.fixture
 def sample_gtfs(sample_gtfs_path, lazy):
-    return gtfs_utils.load_gtfs(sample_gtfs_path, lazy=lazy)
+    return gtfs_utils.load_gtfs_delayed(sample_gtfs_path, lazy=lazy)
 
 
 def test__get_bounding_box(sample_gtfs):
