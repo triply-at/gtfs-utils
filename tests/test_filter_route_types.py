@@ -17,7 +17,7 @@ def sample_data(data_dir):
 
 
 def test__filter_with_all_route_types(sample_data, lazy):
-    gtfs = gtfs_utils.load_gtfs(sample_data, lazy=lazy)
+    gtfs = gtfs_utils.load_gtfs_delayed(sample_data, lazy=lazy)
 
     file_sizes = {key: len(gtfs[key]) for key in gtfs}
 
@@ -32,7 +32,7 @@ def test__filter_with_all_route_types(sample_data, lazy):
 
 
 def test__filter_with_all_route_types_negated(sample_data, lazy):
-    gtfs = gtfs_utils.load_gtfs(sample_data, lazy=lazy)
+    gtfs = gtfs_utils.load_gtfs_delayed(sample_data, lazy=lazy)
 
     filtered = gtfs_utils.filter_gtfs(
         gtfs, [RouteTypeFilter(route_types=ROUTE_TYPES.keys(), negate=True)]
@@ -45,7 +45,7 @@ def test__filter_with_all_route_types_negated(sample_data, lazy):
 
 
 def test__filter_by_type_3(sample_data, lazy):
-    gtfs = gtfs_utils.load_gtfs(sample_data, lazy=lazy)
+    gtfs = gtfs_utils.load_gtfs_delayed(sample_data, lazy=lazy)
 
     assert isinstance(gtfs, GtfsDict)
     for key in gtfs:
