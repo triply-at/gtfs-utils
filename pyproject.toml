@@ -1,6 +1,6 @@
 [project]
 name = "gtfsutils"
-version = "0.2.2"
+version = "0.2.3"
 description = "Utility library for working with gtfs files"
 readme = "README.md"
 authors = [
