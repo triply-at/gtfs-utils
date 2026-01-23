@@ -92,7 +92,7 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
         gtfs.filter(
             "transfers",
             lambda df: df["from_stop_id"].isin(all_stop_ids)
-            | df["to_stop_id"].isin(all_stop_ids),
+            & df["to_stop_id"].isin(all_stop_ids),
         )
         gtfs.filter("shapes", lambda df: df["shape_id"].isin(trips["shape_id"]))
         gtfs.filter("calendar", lambda df: df["service_id"].isin(trips["service_id"]))
@@ -102,8 +102,8 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
         fare_ids = gtfs.filter(
             "fare_rules",
             lambda df: df["route_id"].isin(trips["route_id"])
-            | df["contains_id"].isin(stops["zone_id"])
-            | df["origin_id"].isin(stops["zone_id"]),
+            & df["contains_id"].isin(stops["zone_id"])
+            & df["origin_id"].isin(stops["zone_id"]),
             "fare_id",
         )
         gtfs.filter("fare_attributes", lambda df: df["fare_id"].isin(fare_ids))
@@ -181,14 +181,14 @@ def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
         gtfs.filter(
             "transfers",
             lambda df: df["from_stop_id"].isin(stop_ids)
-            | df["to_stop_id"].isin(stop_ids),
+            & df["to_stop_id"].isin(stop_ids),
         )
         gtfs.filter("frequencies", lambda df: df["trip_id"].isin(trips["trip_id"]))
         fare_ids = gtfs.filter(
             "fare_rules",
             lambda df: df["route_id"].isin(route_ids)
-            | df["contains_id"].isin(stops["zone_id"])
-            | df["origin_id"].isin(stops["zone_id"]),
+            & df["contains_id"].isin(stops["zone_id"])
+            & df["origin_id"].isin(stops["zone_id"]),
             "fare_id",
         )
         gtfs.filter("fare_attributes", lambda df: df["fare_id"].isin(fare_ids))
