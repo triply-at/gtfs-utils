@@ -404,7 +404,7 @@ wheels = [
 
 [[package]]
 name = "gtfsutils"
-version = "0.2.2"
+version = "0.2.4"
 source = { editable = "." }
 dependencies = [
     { name = "dask", extra = ["dataframe"] },
@@ -414,6 +414,7 @@ dependencies = [
     { name = "rich" },
     { name = "shapely" },
     { name = "typer" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -443,6 +444,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13.9.4" },
     { name = "shapely", specifier = ">=2.0.7" },
     { name = "typer", specifier = ">=0.15.2" },
+    { name = "typing-extensions", specifier = ">=4.12.2" },
 ]
 provides-extras = ["maps"]
 
