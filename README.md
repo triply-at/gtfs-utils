@@ -27,7 +27,7 @@ gtfs-utils filter vienna.zip -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o
 or via docker
 
 ```shell
-docker run -t -v "${PWD}:/data" ghcr.io/triply-at/gtfs-utils gtfs-utils filter /data/vienna.zip -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips -o /data/vienna-filtered.zip
+docker run -t -v "${PWD}:/data" ghcr.io/triply-at/gtfs-utils gtfs-utils filter /data/vienna.zip -b '[16.2, 47.95, 16.35, 48.1]' --complete-trips --skip-empty -o /data/vienna-filtered.zip
 ```
 
 
@@ -148,6 +148,12 @@ Currently supported filters:
 
 - **Bounds**: Filter by bounding box. Use the `-b` or `--bounds` option to specify the bounding box in `[minLon, minLat, maxLon, maxLat]` format.
 - **Route Types**: Filter by route types. Use the `--route-types` option to specify the route types to keep.
+
+Use `--skip-empty` to avoid writing a feed when filtering removes all trips or
+service days. The command reports the skipped output and exits successfully. If
+`--overwrite` is also provided, an empty result exits with an error instead, so
+an existing output cannot be mistaken for a newly filtered feed. In either case,
+the empty result does not create, replace, or delete the output path.
 
 Run `gtfs-utils filter --help` for all options.
 

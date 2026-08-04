@@ -71,6 +71,22 @@ def get_calendar_date_range(src: Path | GtfsDict) -> tuple[datetime, datetime]:
     )
 
 
+def _has_active_service(gtfs: GtfsDict) -> bool:
+    """Return whether a filtered feed still contains trips and service days."""
+    if len(gtfs.trips()) == 0:
+        return False
+
+    if "calendar" in gtfs and len(gtfs.calendar()) > 0:
+        return True
+
+    if "calendar_dates" in gtfs:
+        calendar_dates = gtfs.calendar_dates()
+        added_service = calendar_dates[calendar_dates["exception_type"] == 1]
+        return len(added_service) > 0
+
+    return False
+
+
 def get_bounding_box(src: Path | GtfsDict) -> tuple[float, float, float, float]:
     df_dict = load_gtfs_delayed(src) if isinstance(src, Path) else src
 

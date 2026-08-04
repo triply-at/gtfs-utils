@@ -6,6 +6,7 @@ import typer
 from gtfs_utils import load_gtfs_delayed
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
 from gtfs_utils.filter import filter_gtfs, BoundsFilter, RouteTypeFilter
+from gtfs_utils.info import _has_active_service
 from gtfs_utils.utils import Timer
 
 app = typer.Typer()
@@ -85,6 +86,13 @@ def filter_app(
             help="Overwrite output directory if it exists",
         ),
     ] = False,
+    skip_empty: Annotated[
+        bool,
+        typer.Option(
+            "--skip-empty",
+            help="Write no output when the filtered feed has no trips or service days",
+        ),
+    ] = False,
 ):
     if filter_route_types is not None and exclude_route_types is not None:
         raise ValueError(
@@ -120,5 +128,19 @@ def filter_app(
 
     with Timer("Finished filtering in %.2f seconds"):
         filtered = filter_gtfs(df_dict, filters)
+
+    if skip_empty and not _has_active_service(filtered):
+        if overwrite:
+            typer.echo(
+                f'Error: Refusing to overwrite "{output}" with an empty GTFS feed.',
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+        typer.echo(
+            f'Skipped "{output}": filtered GTFS feed is empty; no output written.'
+        )
+        return
+
     filtered.save(output_dir_or_file=output, overwrite=overwrite)
     print(f'Wrote output to "{output}"')
