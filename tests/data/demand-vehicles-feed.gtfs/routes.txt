@@ -1,0 +1,3 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+R1,OP_A,S1,North Shift Shuttle,3
+R2,OP_A,S2,South Shift Shuttle,3

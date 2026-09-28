@@ -13,6 +13,7 @@ import pandas as pd
 from dask import is_dask_collection
 from typing_extensions import deprecated
 
+from gtfs_utils.extensions import GTFS_DEMAND_VEHICLES, DemandVehiclesFile
 from gtfs_utils.spec import FileSpec, GtfsSpec, resolve_dtypes, resolve_files
 
 
@@ -175,6 +176,15 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
 
     def transfers(self) -> pd.DataFrame | dd.DataFrame:
         return self[GtfsFile.TRANSFERS.file]
+
+    def demands(self) -> pd.DataFrame | dd.DataFrame:
+        return self[DemandVehiclesFile.DEMANDS.file]
+
+    def vehicles(self) -> pd.DataFrame | dd.DataFrame:
+        return self[DemandVehiclesFile.VEHICLES.file]
+
+    def shifts(self) -> pd.DataFrame | dd.DataFrame:
+        return self[DemandVehiclesFile.SHIFTS.file]
 
     def file_specs(self) -> list[FileSpec]:
         return resolve_files(self.specs)
@@ -353,7 +363,7 @@ GTFS = GtfsSpec(
     dtypes=DTYPES,
 )
 
-DEFAULT_SPECS: tuple[GtfsSpec, ...] = (GTFS,)
+DEFAULT_SPECS: tuple[GtfsSpec, ...] = (GTFS, GTFS_DEMAND_VEHICLES)
 
 ROUTE_TYPES = {
     0: "Tram, Streetcar, Light rail",
