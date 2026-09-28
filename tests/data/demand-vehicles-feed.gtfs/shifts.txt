@@ -1,0 +1,4 @@
+shift_id,shift_name,shift_start,shift_end,shift_note
+EARLY,Early Shift,06:00:00,14:00:00,Production early shift
+NORMAL,Normal Shift,09:00:00,17:00:00,Standard day shift
+NIGHT,Night Shift,22:00:00,30:00:00,Crosses midnight; ends 06:00 next day

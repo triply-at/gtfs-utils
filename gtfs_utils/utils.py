@@ -13,6 +13,9 @@ import pandas as pd
 from dask import is_dask_collection
 from typing_extensions import deprecated
 
+from gtfs_utils.extensions import GTFS_DEMAND_VEHICLES, DemandVehiclesFile
+from gtfs_utils.spec import FileSpec, GtfsSpec, resolve_dtypes, resolve_files
+
 
 @dataclass
 class GtfsFileMixin:
@@ -37,6 +40,7 @@ class GtfsFile(GtfsFileMixin, Enum):
 class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
     def __init__(self, *args, **kwargs) -> None:
         self.store = {}
+        self.specs: tuple[GtfsSpec, ...] = DEFAULT_SPECS
         self.update(dict(*args, **kwargs))
 
     def __getitem__(self, key, /):
@@ -173,6 +177,29 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
     def transfers(self) -> pd.DataFrame | dd.DataFrame:
         return self[GtfsFile.TRANSFERS.file]
 
+    def demands(self) -> pd.DataFrame | dd.DataFrame:
+        return self[DemandVehiclesFile.DEMANDS.file]
+
+    def vehicles(self) -> pd.DataFrame | dd.DataFrame:
+        return self[DemandVehiclesFile.VEHICLES.file]
+
+    def shifts(self) -> pd.DataFrame | dd.DataFrame:
+        return self[DemandVehiclesFile.SHIFTS.file]
+
+    def file_specs(self) -> list[FileSpec]:
+        return resolve_files(self.specs)
+
+    def remove_orphans(self) -> None:
+        """
+        Remove rows of files whose declared foreign keys no longer resolve, e.g. demands of removed trips.
+        """
+        for spec in self.file_specs():
+            for fk in spec.foreign_keys:
+                if spec.file not in self or fk.ref_file not in self:
+                    continue
+                ref_values = compute_if_necessary(self[fk.ref_file][fk.ref_column])
+                self.filter(spec.file, lambda df: df[fk.column].isin(ref_values))
+
     def filter(
         self,
         file: str | GtfsFile,
@@ -221,12 +248,18 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
 
 class DelayedGtfsDict(GtfsDict):
     def __init__(
-        self, base_file: Path, existing_files: dict[str, str], lazy: bool = False
+        self,
+        base_file: Path,
+        existing_files: dict[str, str],
+        lazy: bool = False,
+        specs: tuple[GtfsSpec, ...] | None = None,
     ) -> None:
         super().__init__()
         self.base_file = base_file
         self.existing_files = existing_files
         self.lazy = lazy
+        if specs is not None:
+            self.specs = specs
 
     def __iter__(self):
         for key in self.existing_files:
@@ -248,14 +281,19 @@ class DelayedGtfsDict(GtfsDict):
         return super().__contains__(item) or item in self.existing_files.keys()
 
     def read_file(self, item: str) -> pd.DataFrame | dd.DataFrame:
+        dtypes = resolve_dtypes(self.specs)
         if self.base_file.is_dir():
             file_path = self.existing_files[item]
-            return _read_from_folder(file_path, self.lazy)
+            return _read_from_folder(file_path, self.lazy, dtypes)
 
         else:
             with ZipFile(self.base_file) as zip_file:
                 return _read_from_zipped(
-                    self.existing_files[item], self.lazy, self.base_file, zip_file
+                    self.existing_files[item],
+                    self.lazy,
+                    self.base_file,
+                    zip_file,
+                    dtypes,
                 )
 
 
@@ -318,6 +356,14 @@ DTYPES = {
     "route_short_name": "string",
     "platform_code": "string",
 }
+
+GTFS = GtfsSpec(
+    name="gtfs",
+    files=tuple(FileSpec(f.file, f.required) for f in GtfsFile),
+    dtypes=DTYPES,
+)
+
+DEFAULT_SPECS: tuple[GtfsSpec, ...] = (GTFS, GTFS_DEMAND_VEHICLES)
 
 ROUTE_TYPES = {
     0: "Tram, Streetcar, Light rail",
@@ -432,7 +478,8 @@ def load_gtfs(
     :param only_subset: Only load files in subset
     :return: a dict of gtfs file names to Dataframes.
     """
-    default_files = [f.file for f in REQUIRED_FILES + OPTIONAL_FILES]
+    default_files = [f.file for f in resolve_files(DEFAULT_SPECS)]
+    dtypes = resolve_dtypes(DEFAULT_SPECS)
 
     if subset is None:
         subset = []
@@ -450,36 +497,43 @@ def load_gtfs(
             if file_name.is_file():
                 file_key = file_name.stem
                 if file_key in files_to_read:
-                    df_dict[file_key] = _read_from_folder(file_name, lazy)
+                    df_dict[file_key] = _read_from_folder(file_name, lazy, dtypes)
 
     elif p.suffix == ".zip":
         with ZipFile(filepath) as zip_file:
             for file_name in zip_file.namelist():
                 file_key = Path(file_name).stem
                 if file_key in files_to_read:
-                    df_dict[file_key] = _read_from_zipped(file_name, lazy, p, zip_file)
+                    df_dict[file_key] = _read_from_zipped(
+                        file_name, lazy, p, zip_file, dtypes
+                    )
     else:
         raise Exception(f"{p} is no directory or zipfile")
 
     return df_dict
 
 
-def _read_from_folder(file_name, lazy) -> pd.DataFrame | dd.DataFrame:
+def _with_unknown_columns(columns, dtypes: dict[str, str]) -> dict[str, str]:
+    unknown = [col for col in columns if col not in dtypes]
+    for col in unknown:
+        logging.warning(col + " not in dtypes - using type string")
+    return {**dtypes, **{col: "string" for col in unknown}}
+
+
+def _read_from_folder(
+    file_name, lazy, dtypes: dict[str, str] = DTYPES
+) -> pd.DataFrame | dd.DataFrame:
     logging.debug(f"Reading {file_name}")
     sample_df = pd.read_csv(file_name, nrows=2)
-    for col in sample_df.columns:
-        if col not in DTYPES:
-            logging.warning(col + " not in dtypes - using type string")
-            DTYPES[col] = "string"
     return (dd if lazy else pd).read_csv(
         file_name,
         low_memory=False,
-        dtype=DTYPES,
+        dtype=_with_unknown_columns(sample_df.columns, dtypes),
     )
 
 
 def _read_from_zipped(
-    file_name, lazy, p, zip_file: ZipFile
+    file_name, lazy, p, zip_file: ZipFile, dtypes: dict[str, str] = DTYPES
 ) -> pd.DataFrame | dd.DataFrame:
     """
     Read a file from a zipped GTFS feed
@@ -487,22 +541,19 @@ def _read_from_zipped(
     :param lazy: if dask should be used for loading
     :param p: path to the zip file
     :param zip_file: the actual (opened) zip file, or None when using lazy
+    :param dtypes: column dtypes, unknown columns are read as string
     :return:
     """
     logging.debug(f"Reading {file_name}")
     with zip_file.open(file_name) as file:
         sample_df = pd.read_csv(file, engine="python", nrows=2)
-
-        for col in sample_df.columns:
-            if col not in DTYPES:
-                logging.warning(col + " not in dtypes - using type string")
-                DTYPES[col] = "string"
+    dtypes = _with_unknown_columns(sample_df.columns, dtypes)
     if lazy:
         return dd.read_csv(
             f"zip://{file_name}",
             encoding="utf-8",
             low_memory=False,
-            dtype=DTYPES,
+            dtype=dtypes,
             storage_options={"fo": p},
         )
     else:
@@ -511,14 +562,22 @@ def _read_from_zipped(
                 file,
                 encoding="utf8",
                 low_memory=False,
-                dtype=DTYPES,
+                dtype=dtypes,
             )
 
 
 def load_gtfs_delayed(
     filepath: str | Path,
     lazy: bool = False,
+    specs: tuple[GtfsSpec, ...] = DEFAULT_SPECS,
 ) -> DelayedGtfsDict:
+    """
+    Load a GTFS feed lazily, files are only read when accessed.
+
+    :param filepath: Path to GTFS directory or zip file
+    :param lazy: If `True`, return dask Dataframes, otherwise returns pandas Dataframes
+    :param specs: GTFS spec and extensions used for dtypes and orphan removal
+    """
     p: Path = Path(filepath)
 
     if not p.exists():
@@ -542,7 +601,9 @@ def load_gtfs_delayed(
     else:
         raise Exception(f"{p} is no directory or zipfile")
 
-    return DelayedGtfsDict(existing_files=existing_files, base_file=p, lazy=lazy)
+    return DelayedGtfsDict(
+        existing_files=existing_files, base_file=p, lazy=lazy, specs=specs
+    )
 
 
 T = TypeVar("T")

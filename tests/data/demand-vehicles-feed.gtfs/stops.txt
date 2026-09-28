@@ -1,0 +1,6 @@
+stop_id,stop_name,stop_lat,stop_lon
+STOP_001,Residential North,48.2100,16.3700
+STOP_002,Residential East,48.2150,16.3850
+STOP_003,Residential South,48.1950,16.3750
+STOP_004,Residential Center,48.2050,16.3900
+STOP_COMPANY,Company Gate,48.2300,16.4000

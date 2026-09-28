@@ -1,5 +1,6 @@
 import logging
 
+import click
 import pytest
 from typer.testing import CliRunner
 
@@ -98,6 +99,7 @@ def test__skip_empty_with_overwrite_fails_without_modifying_output(
 def test__filter_help_documents_skip_empty():
     result = runner.invoke(app, ["filter", "--help"])
 
+    output = click.unstyle(result.output)
     assert result.exit_code == 0
-    assert "--skip-empty" in result.output
-    assert "service days" in result.output
+    assert "--skip-empty" in output
+    assert "service days" in output
