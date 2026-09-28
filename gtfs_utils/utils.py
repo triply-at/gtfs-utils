@@ -176,6 +176,20 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
     def transfers(self) -> pd.DataFrame | dd.DataFrame:
         return self[GtfsFile.TRANSFERS.file]
 
+    def file_specs(self) -> list[FileSpec]:
+        return resolve_files(self.specs)
+
+    def remove_orphans(self) -> None:
+        """
+        Remove rows of files whose declared foreign keys no longer resolve, e.g. demands of removed trips.
+        """
+        for spec in self.file_specs():
+            for fk in spec.foreign_keys:
+                if spec.file not in self or fk.ref_file not in self:
+                    continue
+                ref_values = compute_if_necessary(self[fk.ref_file][fk.ref_column])
+                self.filter(spec.file, lambda df: df[fk.column].isin(ref_values))
+
     def filter(
         self,
         file: str | GtfsFile,
