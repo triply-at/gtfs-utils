@@ -38,6 +38,9 @@ maps = [
     "mapclassify>=2.8.1",
     "matplotlib>=3.10.1",
 ]
+yaml = [
+    "pyyaml>=6.0",
+]
 
 [build-system]
 requires = ["setuptools"]
@@ -48,6 +51,7 @@ dev = [
     "pre-commit>=4.1.0",
     "pytest>=8.3.5",
     "pytest-cov>=6.0.0",
+    "pyyaml>=6.0",
     "ruff>=0.11.0",
 ]
 
