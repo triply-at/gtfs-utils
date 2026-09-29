@@ -65,6 +65,11 @@ def insert_stops(gtfs: GtfsDict, op: InsertStops, op_index: int) -> OpReport:
     entries = {entry.direction_id: entry for entry in op.directions}
     trips = trips[trips["direction_id"].isin(entries).fillna(False)]
     _check_frequencies(gtfs, trips["trip_id"])
+    if any(entry.demand for entry in op.directions) and "demands" not in gtfs:
+        raise PatchError(
+            "extension_missing",
+            "demand needs demands.txt from the gtfs-demand-vehicles extension",
+        )
 
     coordinates = _stop_coordinates(stops)
     changes = _StopTimeChanges()
@@ -82,10 +87,14 @@ def insert_stops(gtfs: GtfsDict, op: InsertStops, op_index: int) -> OpReport:
 
     new_stop_rows = _new_stop_rows(stops, op, used_stops)
     report.stops_added = [row["stop_id"] for row in new_stop_rows]
+    demand_rows = _demand_rows(gtfs, op, trips, changes)
 
     gtfs["stop_times"] = _apply_stop_time_changes(stop_times, changes)
     if new_stop_rows:
         gtfs["stops"] = _append_rows(stops, new_stop_rows)
+    if demand_rows:
+        gtfs["demands"] = _append_rows(gtfs.demands(), demand_rows)
+    report.demands_added = len(demand_rows)
     return report
 
 
@@ -350,6 +359,46 @@ def _new_stop_rows(
                 row["zone_id"] = previous.iloc[0]
         if station is not None:
             row["parent_station"] = station.stop_id
+        rows.append(row)
+    return rows
+
+
+def _demand_rows(
+    gtfs: GtfsDict, op: InsertStops, trips: pd.DataFrame, changes: _StopTimeChanges
+) -> list[dict]:
+    demand_by_stop = {e.stop.stop_id: e.demand for e in op.directions if e.demand}
+    if not demand_by_stop:
+        return []
+
+    shift_by_trip = {}
+    if "shift_id" in trips.columns:
+        shift_by_trip = dict(zip(trips["trip_id"], trips["shift_id"]))
+    demands = gtfs.demands()
+    existing = set(zip(demands["trip_id"], demands["stop_id"]))
+
+    rows = []
+    for _, stop_time in changes.new_rows:
+        demand = demand_by_stop.get(stop_time["stop_id"])
+        if demand is None:
+            continue
+        trip_id, stop_id = stop_time["trip_id"], stop_time["stop_id"]
+        if (trip_id, stop_id) in existing:
+            raise PatchError(
+                "demand_exists",
+                f"demands.txt already has a row for trip {trip_id} at stop {stop_id}",
+            )
+        shift_id = shift_by_trip.get(trip_id)
+        departure = parse_time(stop_time["departure_time"])
+        before, after = demand.window_s
+        row = {
+            "trip_id": trip_id,
+            "stop_id": stop_id,
+            "demand": demand.for_shift(None if pd.isna(shift_id) else shift_id),
+            "earliest_time": format_time(max(0, departure + before)),
+            "latest_time": format_time(max(0, departure + after)),
+        }
+        if demand.note is not None:
+            row["demand_note"] = demand.note
         rows.append(row)
     return rows
 

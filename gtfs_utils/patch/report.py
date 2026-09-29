@@ -16,6 +16,7 @@ class OpReport:
     """Patched trips per direction_id"""
     skipped: list[SkippedTrip] = field(default_factory=list)
     stops_added: list[str] = field(default_factory=list)
+    demands_added: int = 0
 
     def skip(self, trip_ids, code: str, detail: str = "") -> None:
         self.skipped.extend(SkippedTrip(t, code, detail) for t in trip_ids)

@@ -308,7 +308,9 @@ class _Parser:
             offset_s = self.integer(value["offset_s"], f"{where}.offset_s")
 
         if anchor == "untimed":
-            timed = [k for k in ("delta_s", "dwell_s", "offset_s") if value.get(k)]
+            timed = [
+                k for k in ("delta_s", "dwell_s", "offset_s", "demand") if value.get(k)
+            ]
             if timed:
                 raise self.error(
                     where, f"anchor 'untimed' can't be combined with {', '.join(timed)}"
