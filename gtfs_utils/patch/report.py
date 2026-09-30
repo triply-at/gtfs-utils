@@ -20,3 +20,16 @@ class OpReport:
 
     def skip(self, trip_ids, code: str, detail: str = "") -> None:
         self.skipped.extend(SkippedTrip(t, code, detail) for t in trip_ids)
+
+
+@dataclass
+class PatchReport:
+    ops: list[OpReport] = field(default_factory=list)
+
+    @property
+    def trips_patched(self) -> int:
+        return sum(sum(op.trips_patched.values()) for op in self.ops)
+
+    @property
+    def trips_skipped(self) -> int:
+        return sum(len(op.skipped) for op in self.ops)

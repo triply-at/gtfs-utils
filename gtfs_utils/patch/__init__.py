@@ -1,3 +1,4 @@
+from .apply import apply_patch
 from .errors import PatchError, PatchLoadError
 from .loader import load_patch, yaml_available
 from .model import (
@@ -9,8 +10,10 @@ from .model import (
     Selector,
     Station,
 )
+from .report import OpReport, PatchReport, SkippedTrip
 
 __all__ = [
+    "apply_patch",
     "PatchError",
     "PatchLoadError",
     "load_patch",
@@ -22,4 +25,7 @@ __all__ = [
     "DirectionEntry",
     "NewStop",
     "DemandSpec",
+    "PatchReport",
+    "OpReport",
+    "SkippedTrip",
 ]

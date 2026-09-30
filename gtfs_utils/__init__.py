@@ -11,3 +11,4 @@ from .extensions import GTFS_DEMAND_VEHICLES, DemandVehiclesFile
 
 from .info import get_info, get_bounding_box, get_calendar_date_range, get_route_types
 from .filter import filter_gtfs
+from .patch import apply_patch, load_patch
