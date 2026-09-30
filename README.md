@@ -67,6 +67,7 @@ Usage: gtfs-utils [OPTIONS] COMMAND [ARGS]...
 │ route-types   List existing route types and number of routes in a GTFS feed                      │
 │ info          Get information about a GTFS feed                                                  │
 │ filter        Filter a GTFS feed                                                                 │
+│ patch         Apply patches to a GTFS feed                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -156,6 +157,36 @@ an existing output cannot be mistaken for a newly filtered feed. In either case,
 the empty result does not create, replace, or delete the output path.
 
 Run `gtfs-utils filter --help` for all options.
+
+#### patch apply
+
+Applies patch files (`.yaml`, `.yml` or `.json`) to a gtfs feed. A patch inserts a new stop into the trips of a line, one stop per direction, between two stops that are adjacent in those trips.
+
+```yaml
+version: 1
+ops:
+  - op: insert_stops
+    select: {route_id: "AB"}
+    station: {stop_id: MIDWAY, name: "Midway"}  # optional parent station
+    per_direction:
+      0:
+        stop: {stop_id: MIDWAY_0, name: "Midway", lat: 36.8748, lon: -116.8012}
+        between: [BEATTY_AIRPORT, BULLFROG]
+      1:
+        stop: {stop_id: MIDWAY_1, name: "Midway", lat: 36.8746, lon: -116.8014}
+        between: [BULLFROG, BEATTY_AIRPORT]
+```
+
+```shell
+gtfs-utils patch apply feed.zip midway.yaml -o feed-patched.zip
+```
+
+By default no existing times change: the new stop is timed inside the gap between its neighbours. To add travel time, set `delta_s` and an `anchor` (`first_stop` keeps departures, `last_stop` keeps arrivals).
+Trips where the two stops aren't adjacent are skipped and listed in the report; any other problem aborts without writing output.
+
+YAML patches need the `yaml` extra: `pip install 'gtfsutils[yaml]'`.
+
+Run `gtfs-utils patch apply --help` for all options.
 
 ## Development Setup
 
