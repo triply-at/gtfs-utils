@@ -1,0 +1,17 @@
+# New stop between Nye County Airport and Bullfrog on route AB of the sample feed
+version: 1
+ops:
+  - op: insert_stops
+    id: ab-midway
+    select: {route_id: AB}
+    station: {stop_id: MIDWAY, name: "Midway (Demo)"}
+    per_direction:
+      0:
+        stop: {stop_id: MIDWAY_0, name: "Midway (Demo)", lat: 36.8748, lon: -116.8012}
+        between: [BEATTY_AIRPORT, BULLFROG]
+      1:
+        stop: {stop_id: MIDWAY_1, name: "Midway (Demo)", lat: 36.8746, lon: -116.8014}
+        between: [BULLFROG, BEATTY_AIRPORT]
+        anchor: last_stop
+        delta_s: 60
+        dwell_s: 20

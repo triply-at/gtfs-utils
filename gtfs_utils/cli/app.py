@@ -9,13 +9,14 @@ from gtfs_utils import (
     get_bounding_box,
     load_gtfs_delayed,
 )
-from gtfs_utils.cli import filter, info
+from gtfs_utils.cli import filter, info, patch
 from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
 from gtfs_utils.info import get_route_type_counts
 
 app = typer.Typer()
 app.add_typer(info.app)
 app.add_typer(filter.app)
+app.add_typer(patch.app, name="patch")
 
 
 def version_callback(value: bool):
