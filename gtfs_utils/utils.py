@@ -1,11 +1,11 @@
 import logging
 import shutil
 import time
-from collections.abc import MutableMapping
+from collections.abc import Callable, MutableMapping
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import IO, Callable, List, Literal, TypeVar
+from typing import IO, Literal, TypeVar
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import dask.dataframe as dd
@@ -15,6 +15,8 @@ from typing_extensions import deprecated
 
 from gtfs_utils.extensions import GTFS_DEMAND_VEHICLES, DemandVehiclesFile
 from gtfs_utils.spec import FileSpec, GtfsSpec, resolve_dtypes, resolve_files
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -80,9 +82,7 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
             raise KeyError(f"{file} not found in GTFS data")
         df = self[file]
 
-        if isinstance(file, str) and (
-            isinstance(output, Path) or isinstance(output, str)
-        ):
+        if isinstance(file, str) and isinstance(output, (Path, str)):
             output = Path(output) / f"{file}.txt"
 
         save_kwargs = (
@@ -97,7 +97,7 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
 
         if output.exists():
             if overwrite:
-                logging.warning(f"{output} already exists but will be deleted.")
+                logger.warning(f"{output} already exists but will be deleted.")
                 if output.is_file():
                     output.unlink()
                 else:
@@ -119,7 +119,7 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
             for file in self:
                 self.save_file(file, output)
 
-    def stop_gdf(self, additional_columns: List[str] | Literal["all"] | None = None):
+    def stop_gdf(self, additional_columns: list[str] | Literal["all"] | None = None):
         """
         Returns a GeoDataFrame of stops
         :param additional_columns: additional columns to include in the GeoDataFrame, per default only ID is included
@@ -198,13 +198,18 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
                 if spec.file not in self or fk.ref_file not in self:
                     continue
                 ref_values = compute_if_necessary(self[fk.ref_file][fk.ref_column])
-                self.filter(spec.file, lambda df: df[fk.column].isin(ref_values))
+                self.filter(
+                    spec.file,
+                    lambda df, column=fk.column, values=ref_values: df[column].isin(
+                        values
+                    ),
+                )
 
     def filter(
         self,
         file: str | GtfsFile,
         where: Callable[[pd.DataFrame], pd.Series],
-        return_cols: str | List[str] = None,
+        return_cols: str | list[str] | None = None,
     ) -> pd.Series | pd.DataFrame | None:
         """
         Filter a file in the GTFS feed by a where condition.
@@ -226,7 +231,7 @@ class GtfsDict(MutableMapping[str, pd.DataFrame | dd.DataFrame]):
                 return pd.DataFrame(columns=return_cols)
 
         mask = where(self[file])
-        self[file] = self[file][mask]  # noqa
+        self[file] = self[file][mask]
         if return_cols is None:
             return None
 
@@ -270,7 +275,7 @@ class DelayedGtfsDict(GtfsDict):
         if super().__contains__(item):
             return super().__getitem__(item)
 
-        if item not in self.existing_files.keys():
+        if item not in self.existing_files:
             raise KeyError(f"{item} not found in GTFS data")
 
         file = self.read_file(item)
@@ -278,7 +283,7 @@ class DelayedGtfsDict(GtfsDict):
         return file
 
     def __contains__(self, item):
-        return super().__contains__(item) or item in self.existing_files.keys()
+        return super().__contains__(item) or item in self.existing_files
 
     def read_file(self, item: str) -> pd.DataFrame | dd.DataFrame:
         dtypes = resolve_dtypes(self.specs)
@@ -297,9 +302,9 @@ class DelayedGtfsDict(GtfsDict):
                 )
 
 
-REQUIRED_FILES: List[GtfsFile] = [f for f in GtfsFile if f.required]
-OPTIONAL_FILES: List[GtfsFile] = [f for f in GtfsFile if not f.required]
-OPTIONAL_FILE_NAMES: List[str] = [f.file for f in OPTIONAL_FILES]
+REQUIRED_FILES: list[GtfsFile] = [f for f in GtfsFile if f.required]
+OPTIONAL_FILES: list[GtfsFile] = [f for f in GtfsFile if not f.required]
+OPTIONAL_FILE_NAMES: list[str] = [f.file for f in OPTIONAL_FILES]
 
 # https://developers.google.com/transit/gtfs/reference
 DTYPES = {
@@ -490,7 +495,7 @@ def load_gtfs(
     files_to_read = subset if only_subset else (subset + default_files)
 
     if not p.exists():
-        raise Exception(f"{p} Does not exist")
+        raise FileNotFoundError(f"{p} Does not exist")
 
     if p.is_dir():
         for file_name in p.iterdir():
@@ -508,7 +513,7 @@ def load_gtfs(
                         file_name, lazy, p, zip_file, dtypes
                     )
     else:
-        raise Exception(f"{p} is no directory or zipfile")
+        raise ValueError(f"{p} is no directory or zipfile")
 
     return df_dict
 
@@ -516,14 +521,14 @@ def load_gtfs(
 def _with_unknown_columns(columns, dtypes: dict[str, str]) -> dict[str, str]:
     unknown = [col for col in columns if col not in dtypes]
     for col in unknown:
-        logging.warning(col + " not in dtypes - using type string")
+        logger.warning(col + " not in dtypes - using type string")
     return {**dtypes, **{col: "string" for col in unknown}}
 
 
 def _read_from_folder(
     file_name, lazy, dtypes: dict[str, str] = DTYPES
 ) -> pd.DataFrame | dd.DataFrame:
-    logging.debug(f"Reading {file_name}")
+    logger.debug(f"Reading {file_name}")
     sample_df = pd.read_csv(file_name, nrows=2)
     return (dd if lazy else pd).read_csv(
         file_name,
@@ -544,7 +549,7 @@ def _read_from_zipped(
     :param dtypes: column dtypes, unknown columns are read as string
     :return:
     """
-    logging.debug(f"Reading {file_name}")
+    logger.debug(f"Reading {file_name}")
     with zip_file.open(file_name) as file:
         sample_df = pd.read_csv(file, engine="python", nrows=2)
     dtypes = _with_unknown_columns(sample_df.columns, dtypes)
@@ -581,7 +586,7 @@ def load_gtfs_delayed(
     p: Path = Path(filepath)
 
     if not p.exists():
-        raise Exception(f"{p} Does not exist")
+        raise FileNotFoundError(f"{p} Does not exist")
 
     if p.is_dir():
         existing_files = {
@@ -599,7 +604,7 @@ def load_gtfs_delayed(
                 if Path(file_name).suffix in [".txt", ".csv"] and "/" not in file_name
             }
     else:
-        raise Exception(f"{p} is no directory or zipfile")
+        raise ValueError(f"{p} is no directory or zipfile")
 
     return DelayedGtfsDict(
         existing_files=existing_files, base_file=p, lazy=lazy, specs=specs
@@ -640,4 +645,4 @@ class Timer:
 
     def __exit__(self, *args):
         self.end = time.time()
-        logging.log(self.log_level, self.description, self.end - self.start)
+        logger.log(self.log_level, self.description, self.end - self.start)

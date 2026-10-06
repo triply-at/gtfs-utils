@@ -46,5 +46,5 @@ def test__get_calendar_date_range(sample_gtfs):
 
     assert isinstance(min_date, datetime) and isinstance(max_date, datetime)
     assert min_date <= max_date
-    assert min_date == datetime(2007, 1, 1)
-    assert max_date == datetime(2010, 12, 31)
+    assert min_date == datetime(2007, 1, 1)  # noqa: DTZ001
+    assert max_date == datetime(2010, 12, 31)  # noqa: DTZ001

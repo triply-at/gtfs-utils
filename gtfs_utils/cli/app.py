@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -10,7 +10,7 @@ from gtfs_utils import (
     load_gtfs_delayed,
 )
 from gtfs_utils.cli import filter, info, patch
-from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
+from gtfs_utils.cli.cli_utils import LazyOption, SourceArgument
 from gtfs_utils.info import get_route_type_counts
 
 app = typer.Typer()
@@ -29,7 +29,7 @@ def version_callback(value: bool):
 @app.callback()
 def common(
     print_version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version/",
             help="Print version and exit",
@@ -38,7 +38,7 @@ def common(
         ),
     ] = False,
     verbose: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--verbose",
             "-v",
@@ -70,7 +70,7 @@ def route_types(
     src: SourceArgument,
     lazy: LazyOption = False,
     _list: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--list/", help="Show a list of included route types instead of counts"
         ),

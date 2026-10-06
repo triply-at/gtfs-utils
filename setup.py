@@ -1,5 +1,6 @@
-from setuptools import setup
 from pathlib import Path
+
+from setuptools import setup
 
 try:
     this_directory = Path(__file__).absolute().parent

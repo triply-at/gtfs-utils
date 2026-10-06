@@ -1,12 +1,12 @@
 import logging
 
-import pandas as pd
 import dask.dataframe as dd
+import pandas as pd
 import pytest
 
 import gtfs_utils
 from gtfs_utils.filter import RouteTypeFilter
-from gtfs_utils.utils import GtfsDict, ROUTE_TYPES, compute_if_necessary
+from gtfs_utils.utils import ROUTE_TYPES, GtfsDict, compute_if_necessary
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -49,9 +49,7 @@ def test__filter_by_type_3(sample_data, lazy):
 
     assert isinstance(gtfs, GtfsDict)
     for key in gtfs:
-        assert isinstance(gtfs[key], pd.DataFrame) or isinstance(
-            gtfs[key], dd.DataFrame
-        )
+        assert isinstance(gtfs[key], (pd.DataFrame, dd.DataFrame))
 
     filtered = gtfs_utils.filter_gtfs(gtfs, [RouteTypeFilter(route_types=[3])])
 

@@ -259,7 +259,7 @@ def _plan_trip(
             return False
 
         if entry.anchor == "last_stop":
-            shifted = {i: -entry.delta_s for i in range(0, b)}
+            shifted = {i: -entry.delta_s for i in range(b)}
             a_departure -= entry.delta_s
         elif entry.delta_s:
             shifted = {i: entry.delta_s for i in range(b, len(labels))}
