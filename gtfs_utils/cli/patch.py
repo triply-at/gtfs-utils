@@ -1,6 +1,6 @@
 from collections import Counter
 from pathlib import Path
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -32,7 +32,7 @@ SKIPPED_TRIPS_SHOWN = 5
 def apply_app(
     src: SourceArgument,
     patches: Annotated[
-        List[Path],
+        list[Path],
         typer.Argument(
             exists=True,
             file_okay=True,
@@ -42,7 +42,7 @@ def apply_app(
         ),
     ],
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--output",
             "-o",

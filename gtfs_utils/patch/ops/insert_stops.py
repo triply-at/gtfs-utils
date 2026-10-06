@@ -174,9 +174,9 @@ def _plan_direction(
 
     trips_by_pattern: dict[tuple, list[str]] = defaultdict(list)
     for trip_id, pattern in (
-        rows.groupby("trip_id", sort=False)["stop_id"].agg(tuple).items()
+        rows.groupby("trip_id", sort=False)["stop_id"].agg(list).items()
     ):
-        trips_by_pattern[pattern].append(trip_id)
+        trips_by_pattern[tuple(pattern)].append(trip_id)
 
     position_by_trip: dict[str, int] = {}
     a, b = entry.between
@@ -259,7 +259,7 @@ def _plan_trip(
             return False
 
         if entry.anchor == "last_stop":
-            shifted = {i: -entry.delta_s for i in range(0, b)}
+            shifted = {i: -entry.delta_s for i in range(b)}
             a_departure -= entry.delta_s
         elif entry.delta_s:
             shifted = {i: entry.delta_s for i in range(b, len(labels))}

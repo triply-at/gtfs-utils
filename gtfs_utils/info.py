@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from . import load_gtfs_delayed
-from .utils import GtfsDict, compute_if_necessary
+from .utils import GtfsDict, compute_if_necessary, load_gtfs_delayed
 
 
 @dataclass
@@ -66,8 +65,8 @@ def get_calendar_date_range(src: Path | GtfsDict) -> tuple[datetime, datetime]:
         raise ValueError("calendar.txt missing")
 
     return (
-        datetime.strptime(str(min_date), "%Y%m%d"),
-        datetime.strptime(str(max_date), "%Y%m%d"),
+        datetime.strptime(str(min_date), "%Y%m%d"),  # noqa: DTZ007
+        datetime.strptime(str(max_date), "%Y%m%d"),  # noqa: DTZ007
     )
 
 

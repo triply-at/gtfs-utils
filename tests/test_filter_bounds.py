@@ -1,7 +1,7 @@
 import logging
 
-import pandas as pd
 import dask.dataframe as dd
+import pandas as pd
 import pytest
 
 import gtfs_utils
@@ -31,9 +31,7 @@ def test__filter_with_empty_bounds(vienna_data_path, lazy):
 
     assert isinstance(gtfs, GtfsDict)
     for key in gtfs:
-        assert isinstance(gtfs[key], pd.DataFrame) or isinstance(
-            gtfs[key], dd.DataFrame
-        )
+        assert isinstance(gtfs[key], (pd.DataFrame, dd.DataFrame))
 
     bounds = [0, 0, 0, 0]
     filtered = gtfs_utils.filter_gtfs(

@@ -3,7 +3,7 @@ from rich.console import Console
 from rich.table import Table
 
 from gtfs_utils import get_info, load_gtfs_delayed
-from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
+from gtfs_utils.cli.cli_utils import LazyOption, SourceArgument
 from gtfs_utils.utils import ROUTE_TYPES
 
 app = typer.Typer()
@@ -44,8 +44,6 @@ def info(
     table.add_column("Route Type ID", justify="center")
     table.add_column("# Routes", justify="right")
     for type_int, count in gtfs_info.route_type_counts.items():
-        route_type_str = (
-            ROUTE_TYPES[type_int] if type_int in ROUTE_TYPES else "Unknown Type"
-        )
+        route_type_str = ROUTE_TYPES.get(type_int, "Unknown Type")
         table.add_row(route_type_str, str(type_int), f"{count:_} routes")
     console.print(table)

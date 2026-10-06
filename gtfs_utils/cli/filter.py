@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Annotated, Optional, List
+from typing import Annotated
 
 import typer
 
 from gtfs_utils import load_gtfs_delayed
-from gtfs_utils.cli.cli_utils import SourceArgument, LazyOption
-from gtfs_utils.filter import filter_gtfs, BoundsFilter, RouteTypeFilter
+from gtfs_utils.cli.cli_utils import LazyOption, SourceArgument
+from gtfs_utils.filter import BoundsFilter, RouteTypeFilter, filter_gtfs
 from gtfs_utils.info import _has_active_service
 from gtfs_utils.utils import Timer
 
@@ -13,7 +13,7 @@ app = typer.Typer()
 
 
 class Bounds:
-    def __init__(self, bounds: List[float]):
+    def __init__(self, bounds: list[float]):
         self.bounds = bounds
 
 
@@ -49,7 +49,7 @@ def filter_app(
         ),
     ],
     bounds: Annotated[
-        Optional[Bounds],
+        Bounds | None,
         typer.Option(
             "--bounds",
             "-b",
@@ -58,28 +58,28 @@ def filter_app(
         ),
     ] = None,
     complete_trips: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--complete-trips",
             help="Keep trips complete, even if some stops are outside bounds",
         ),
     ] = True,
     filter_route_types: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--filter-route-types",
             help="Route types to filter by, e.g. `0,1,2`. All routes with a different type will be removed. ",
         ),
     ] = None,
     exclude_route_types: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--remove-route-types", help="Route types to remove, e.g. `0,1,2`"
         ),
     ] = None,
     lazy: LazyOption = False,
     overwrite: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--overwrite",
             "-f",

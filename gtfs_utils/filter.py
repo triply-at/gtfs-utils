@@ -1,17 +1,17 @@
 import dataclasses
 import datetime
-from typing import List, Dict, Callable
+from collections.abc import Callable
 
+import geopandas as gpd
 import pandas as pd
 import shapely
-import geopandas as gpd
 
-from gtfs_utils.utils import GtfsDict, compute_if_necessary, Timer
+from gtfs_utils.utils import GtfsDict, Timer, compute_if_necessary
 
 
 @dataclasses.dataclass
 class BoundsFilter:
-    bounds: List[float] | shapely.geometry.base.BaseGeometry
+    bounds: list[float] | shapely.geometry.base.BaseGeometry
     """Bounding box or geometry to filter by"""
     complete_trips: bool
     """Keep trips complete, even if some stops are outside bounds"""
@@ -20,7 +20,7 @@ class BoundsFilter:
 
 @dataclasses.dataclass
 class RouteTypeFilter:
-    route_types: List[int]
+    route_types: list[int]
     """Route types to filter by"""
     negate: bool = False
     """Negate the filter (removes given route types)"""
@@ -37,7 +37,7 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
     elif isinstance(filt.bounds, shapely.geometry.base.BaseGeometry):
         bounds = filt.bounds
     else:
-        raise ValueError(f"filter_geometry type {type(filt.bounds)} not supported!")
+        raise TypeError(f"filter_geometry type {type(filt.bounds)} not supported!")
 
     with Timer("Converted stops to gpd for %.2f seconds"):
         all_stops = compute_if_necessary(
@@ -91,8 +91,10 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
         )
         gtfs.filter(
             "transfers",
-            lambda df: df["from_stop_id"].isin(all_stop_ids)
-            & df["to_stop_id"].isin(all_stop_ids),
+            lambda df: (
+                df["from_stop_id"].isin(all_stop_ids)
+                & df["to_stop_id"].isin(all_stop_ids)
+            ),
         )
         gtfs.filter("shapes", lambda df: df["shape_id"].isin(trips["shape_id"]))
         gtfs.filter("calendar", lambda df: df["service_id"].isin(trips["service_id"]))
@@ -101,9 +103,11 @@ def filter_by_bounds(gtfs: GtfsDict, filt: BoundsFilter) -> GtfsDict:
         )
         fare_ids = gtfs.filter(
             "fare_rules",
-            lambda df: df["route_id"].isin(trips["route_id"])
-            & df["contains_id"].isin(stops["zone_id"])
-            & df["origin_id"].isin(stops["zone_id"]),
+            lambda df: (
+                df["route_id"].isin(trips["route_id"])
+                & df["contains_id"].isin(stops["zone_id"])
+                & df["origin_id"].isin(stops["zone_id"])
+            ),
             "fare_id",
         )
         gtfs.filter("fare_attributes", lambda df: df["fare_id"].isin(fare_ids))
@@ -144,7 +148,7 @@ def fix_calendar_problems(df_dict: GtfsDict):
                 i,
             ]
             for j, service in service_group.iterrows():
-                day = datetime.datetime.strptime(str(service.date), "%Y%m%d").weekday()
+                day = datetime.datetime.strptime(str(service.date), "%Y%m%d").weekday()  # noqa: DTZ007
                 records[day] = 1
             calendar.loc[len(calendar)] = records
         df_dict["calendar"] = calendar
@@ -153,9 +157,11 @@ def fix_calendar_problems(df_dict: GtfsDict):
 def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
     routes = gtfs.filter(
         "routes",
-        lambda df: ~df["route_type"].isin(filt.route_types)
-        if filt.negate
-        else df["route_type"].isin(filt.route_types),
+        lambda df: (
+            ~df["route_type"].isin(filt.route_types)
+            if filt.negate
+            else df["route_type"].isin(filt.route_types)
+        ),
         ["route_id", "agency_id"],
     )
 
@@ -181,15 +187,18 @@ def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
         )
         gtfs.filter(
             "transfers",
-            lambda df: df["from_stop_id"].isin(stop_ids)
-            & df["to_stop_id"].isin(stop_ids),
+            lambda df: (
+                df["from_stop_id"].isin(stop_ids) & df["to_stop_id"].isin(stop_ids)
+            ),
         )
         gtfs.filter("frequencies", lambda df: df["trip_id"].isin(trips["trip_id"]))
         fare_ids = gtfs.filter(
             "fare_rules",
-            lambda df: df["route_id"].isin(route_ids)
-            & df["contains_id"].isin(stops["zone_id"])
-            & df["origin_id"].isin(stops["zone_id"]),
+            lambda df: (
+                df["route_id"].isin(route_ids)
+                & df["contains_id"].isin(stops["zone_id"])
+                & df["origin_id"].isin(stops["zone_id"])
+            ),
             "fare_id",
         )
         gtfs.filter("fare_attributes", lambda df: df["fare_id"].isin(fare_ids))
@@ -199,13 +208,13 @@ def filter_by_route_type(gtfs: GtfsDict, filt: RouteTypeFilter) -> GtfsDict:
     return gtfs
 
 
-_filters: Dict[str, FilterFunction] = {
+_filters: dict[str, FilterFunction] = {
     "bounds": filter_by_bounds,
     "route_type": filter_by_route_type,
 }
 
 
-def filter_gtfs(df_dict: GtfsDict, filters: List[Filter]) -> GtfsDict:
+def filter_gtfs(df_dict: GtfsDict, filters: list[Filter]) -> GtfsDict:
     """
     Filter the gtfs feed based on the filters provided. Careful - this overwrites data in the  input GtfsDict!
     :param df_dict: gtfs feed to filter
