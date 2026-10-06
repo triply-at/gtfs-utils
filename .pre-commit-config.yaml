@@ -7,7 +7,7 @@ repos:
           - --fix
       - id: ruff-format
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.6.6
+    rev: 0.10.9
     hooks:
       - id: uv-export
         args: [ "--no-dev", "--no-hashes", "--format=requirements-txt", "--output-file=requirements.txt", "--no-emit-project" ]

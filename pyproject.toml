@@ -9,14 +9,14 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "dask[dataframe]>=2025.2.0",
-    "geopandas>=1.0.1",
-    "numpy>=2.2.4",
-    "pandas>=2.2.3",
-    "rich>=13.9.4",
-    "shapely>=2.0.7",
-    "typer>=0.15.2",
-    "typing-extensions>=4.12.2",
+    "dask[dataframe]>=2026.8.0",
+    "geopandas>=1.1.4",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "rich>=15.0.0",
+    "shapely>=2.1.2",
+    "typer>=0.27.2",
+    "typing-extensions>=4.16.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -34,12 +34,12 @@ gtfsutils = "gtfs_utils.__main__:main"
 
 [project.optional-dependencies]
 maps = [
-    "folium>=0.19.5",
+    "folium>=0.20.0",
     "mapclassify>=2.8.1",
-    "matplotlib>=3.10.1",
+    "matplotlib>=3.10.9",
 ]
 yaml = [
-    "pyyaml>=6.0",
+    "pyyaml>=6.0.3",
 ]
 
 [build-system]
@@ -48,10 +48,10 @@ build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.1.0",
-    "pytest>=8.3.5",
-    "pytest-cov>=6.0.0",
-    "pyyaml>=6.0",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pyyaml>=6.0.3",
     "ruff>=0.11.0",
 ]
 
