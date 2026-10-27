@@ -65,8 +65,8 @@ def get_calendar_date_range(src: Path | GtfsDict) -> tuple[datetime, datetime]:
         raise ValueError("calendar.txt missing")
 
     return (
-        datetime.strptime(str(min_date), "%Y%m%d"),  # noqa: DTZ007
-        datetime.strptime(str(max_date), "%Y%m%d"),  # noqa: DTZ007
+        datetime.strptime(str(min_date), "%Y%m%d"),
+        datetime.strptime(str(max_date), "%Y%m%d"),
     )
 
 

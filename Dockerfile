@@ -1,6 +1,6 @@
 # An example of using standalone Python builds with multistage images.
 # First, build the application in the `/app` directory
-FROM ghcr.io/astral-sh/uv:bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:0.13.6-debian-slim AS builder
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
 # Configure the Python directory so it is consistent
@@ -10,7 +10,7 @@ ENV UV_PYTHON_INSTALL_DIR=/python
 ENV UV_PYTHON_PREFERENCE=only-managed
 
 # Install Python before the project for caching
-RUN uv python install 3.10
+RUN uv python install 3.11
 
 WORKDIR /app
 RUN --mount=type=cache,target=/root/.cache/uv \

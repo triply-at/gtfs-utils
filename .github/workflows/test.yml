@@ -6,18 +6,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10
         with:
-          version: 0.6.6
+          version: 0.13.6
 
       - name: Set up Python
         run: uv python install
 
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
 
@@ -25,4 +25,4 @@ jobs:
         run: uv sync --dev
 
       - name: Run tests
-        run: uv run pytest --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+        run: uv run pytest --doctest-modules --junitxml=junit/test-results.xml --cov=gtfs_utils --cov-report=xml --cov-report=html
