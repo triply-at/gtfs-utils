@@ -148,7 +148,7 @@ def fix_calendar_problems(df_dict: GtfsDict):
                 i,
             ]
             for j, service in service_group.iterrows():
-                day = datetime.datetime.strptime(str(service.date), "%Y%m%d").weekday()  # noqa: DTZ007
+                day = datetime.datetime.strptime(str(service.date), "%Y%m%d").weekday()
                 records[day] = 1
             calendar.loc[len(calendar)] = records
         df_dict["calendar"] = calendar

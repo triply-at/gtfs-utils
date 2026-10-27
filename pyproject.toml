@@ -7,7 +7,7 @@ authors = [
     { name = "Luis Nachtigall", email = "l.nachtigall@triply.at" },
     { name = "Chris Stelzmüller", email = "c.stelzmueller@triply.at" }
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "dask[dataframe]>=2026.8.0",
     "geopandas>=1.1.4",
@@ -15,7 +15,7 @@ dependencies = [
     "pandas>=2.3.3",
     "rich>=15.0.0",
     "shapely>=2.1.2",
-    "typer>=0.27.2",
+    "typer>=0.27.3",
     "typing-extensions>=4.16.0",
 ]
 classifiers = [
@@ -52,7 +52,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "pyyaml>=6.0.3",
-    "ruff>=0.16.10",
+    "ruff>=0.17.3",
 ]
 
 [tool.pytest.ini_options]
